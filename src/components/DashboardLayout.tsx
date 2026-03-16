@@ -34,10 +34,8 @@ export default function DashboardLayout() {
     <div className="flex min-h-screen bg-background">
       <aside className="hidden lg:flex flex-col w-60 border-r border-border/50 p-4">
         <div className="flex items-center gap-2 mb-8 px-2 cursor-pointer" onClick={() => navigate("/")}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
-            <Zap className="h-4 w-4 text-foreground" />
-          </div>
-          <span className="text-base font-bold tracking-tight text-foreground">SkillAura</span>
+          <img src="/favicon.png" alt="SkillAura PathFinder AI" className="h-8 w-8" />
+          <span className="text-base font-bold tracking-tight text-foreground">SkillAura <span className="text-primary">PF</span></span>
         </div>
         <nav className="flex-1 space-y-1">
           {allItems.map((item) => (

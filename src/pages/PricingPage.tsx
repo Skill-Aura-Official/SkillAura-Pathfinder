@@ -36,8 +36,8 @@ export default function PricingPage() {
       <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto flex h-16 items-center justify-between px-6">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary"><Zap className="h-4 w-4 text-foreground" /></div>
-            <span className="text-lg font-bold tracking-tight text-foreground">SkillAura</span>
+            <img src="/favicon.png" alt="SkillAura PathFinder AI" className="h-8 w-8" />
+            <span className="text-lg font-bold tracking-tight text-foreground">SkillAura <span className="text-primary">PathFinder</span></span>
           </div>
         </div>
       </nav>
