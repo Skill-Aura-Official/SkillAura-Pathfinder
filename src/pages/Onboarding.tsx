@@ -168,9 +168,7 @@ export default function Onboarding() {
 
           {step === 3 && (
             <motion.div key="complete" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="surface-card-inset p-8 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-xl gradient-primary glow-blue mx-auto mb-4">
-                <Zap className="h-8 w-8 text-foreground" />
-              </div>
+              <img src="/favicon.png" alt="SkillAura PathFinder AI" className="h-16 w-16 mx-auto mb-4" />
               <h2 className="text-2xl font-bold text-foreground mb-2">System Activated</h2>
               <p className="text-sm text-muted-foreground mb-6">Your career profile is ready. Begin your ascension.</p>
               <div className="surface-card p-4 mb-6 text-left">

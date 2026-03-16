@@ -36,9 +36,7 @@ export default function ResetPassword() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary glow-blue mx-auto mb-4">
-            <Zap className="h-5 w-5 text-foreground" />
-          </div>
+          <img src="/favicon.png" alt="SkillAura PathFinder AI" className="h-12 w-12 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-foreground">Set New Password</h1>
         </div>
         <div className="surface-card-inset p-6">
