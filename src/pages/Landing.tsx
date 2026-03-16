@@ -36,7 +36,7 @@ export default function Landing() {
           <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#how" className="hover:text-foreground transition-colors">How It Works</a>
-            <a href="#pricing" className="hover:text-foreground transition-colors">Pricing</a>
+            <a href="/pricing" className="hover:text-foreground transition-colors">Pricing</a>
           </div>
           <Button onClick={() => navigate("/dashboard")} size="sm" className="gradient-primary text-foreground border-0">
             Enter System <ChevronRight className="ml-1 h-3 w-3" />
