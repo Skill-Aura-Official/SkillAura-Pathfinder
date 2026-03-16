@@ -34,6 +34,13 @@ export default function Login() {
     if (error) toast.error(error.message);
   };
 
+  const handleAppleLogin = async () => {
+    const { error } = await lovable.auth.signInWithOAuth("apple", {
+      redirect_uri: window.location.origin,
+    });
+    if (error) toast.error(error.message);
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <motion.div
