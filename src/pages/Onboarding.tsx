@@ -54,8 +54,8 @@ export default function Onboarding() {
     if (!user) return;
     try {
       await supabase.from("career_profiles").update({
-        career_class: selectedClass,
-        interview_data: { answers },
+        career_class: selectedClass as any,
+        interview_data: { answers } as any,
       }).eq("user_id", user.id);
       toast.success("Career profile created!");
       navigate("/dashboard");
