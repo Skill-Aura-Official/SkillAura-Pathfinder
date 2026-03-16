@@ -199,10 +199,10 @@ export default function Landing() {
       <footer className="border-t border-border/50 py-8">
         <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-primary" />
+            <img src="/favicon.png" alt="SkillAura PathFinder AI" className="h-5 w-5" />
             <span className="font-semibold text-foreground">SkillAura PathFinder AI</span>
           </div>
-          <p>© 2026 SkillAura. All rights reserved.</p>
+          <p>© 2026 SkillAura PathFinder AI. All rights reserved.</p>
         </div>
       </footer>
     </div>

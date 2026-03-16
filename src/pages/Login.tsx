@@ -49,10 +49,8 @@ export default function Login() {
         className="w-full max-w-md"
       >
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary glow-blue">
-              <Zap className="h-5 w-5 text-foreground" />
-            </div>
+          <div className="flex items-center justify-center mb-4">
+            <img src="/favicon.png" alt="SkillAura PathFinder AI" className="h-12 w-12" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Enter the System</h1>
           <p className="text-sm text-muted-foreground mt-1">Login to continue your career progression</p>
