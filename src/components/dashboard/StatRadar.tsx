@@ -1,15 +1,21 @@
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
 
-const data = [
-  { stat: "Technical", value: 78 },
-  { stat: "Logic", value: 85 },
-  { stat: "Creativity", value: 62 },
-  { stat: "Communication", value: 70 },
-  { stat: "Leadership", value: 45 },
-  { stat: "Problem Solving", value: 88 },
-];
+interface StatRadarProps {
+  stats?: Record<string, number>;
+}
 
-export default function StatRadar() {
+const defaultStats: Record<string, number> = {
+  Technical: 78,
+  Logic: 85,
+  Creativity: 62,
+  Communication: 70,
+  Leadership: 45,
+  "Problem Solving": 88,
+};
+
+export default function StatRadar({ stats }: StatRadarProps) {
+  const data = Object.entries(stats || defaultStats).map(([stat, value]) => ({ stat, value }));
+
   return (
     <div className="surface-card-inset p-4">
       <div className="text-label mb-3">Ability Stats</div>
