@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Zap, Target, Brain, TrendingUp, Shield, Award, ChevronRight, Swords, Map, BarChart3 } from "lucide-react";
+import { Zap, Target, Brain, TrendingUp, Shield, Award, ChevronRight, Swords, Map, BarChart3, Users, Eye, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import heroBg from "@/assets/hero-bg.jpg";
 
 const features = [
   { icon: Brain, title: "AI Resume Analysis", desc: "Upload your resume. Our AI extracts abilities, detects gaps, and builds your career profile." },
@@ -19,6 +20,12 @@ const stats = [
   { value: "S-Rank", label: "Top Achievers" },
 ];
 
+const testimonials = [
+  { name: "Ananya R.", role: "Data Scientist at Google", quote: "SkillAura turned my scattered learning into a clear career path. Went from Rank E to B in 3 months!" },
+  { name: "Vikram S.", role: "Full Stack Developer", quote: "The quest system is addictive. I've completed 200+ quests and landed my dream job." },
+  { name: "Priya M.", role: "AI Engineer at Meta", quote: "The AI Mentor feature is incredible. It's like having a senior engineer guiding you 24/7." },
+];
+
 export default function Landing() {
   const navigate = useNavigate();
 
@@ -34,16 +41,27 @@ export default function Landing() {
           <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition-colors">Features</a>
             <a href="#how" className="hover:text-foreground transition-colors">How It Works</a>
-            <a href="/pricing" className="hover:text-foreground transition-colors">Pricing</a>
+            <a href="#testimonials" className="hover:text-foreground transition-colors">Testimonials</a>
+            <button onClick={() => navigate("/about")} className="hover:text-foreground transition-colors">About</button>
+            <button onClick={() => navigate("/pricing")} className="hover:text-foreground transition-colors">Pricing</button>
           </div>
-          <Button onClick={() => navigate("/dashboard")} size="sm" className="gradient-primary text-foreground border-0">
-            Enter System <ChevronRight className="ml-1 h-3 w-3" />
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/login")} className="text-muted-foreground hover:text-foreground">
+              Login
+            </Button>
+            <Button onClick={() => navigate("/signup")} size="sm" className="gradient-primary text-foreground border-0">
+              Get Started <ChevronRight className="ml-1 h-3 w-3" />
+            </Button>
+          </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
+      {/* Hero with Background Image */}
+      <section className="relative pt-32 pb-24 overflow-hidden">
+        <div className="absolute inset-0">
+          <img src={heroBg} alt="" className="w-full h-full object-cover opacity-20" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+        </div>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(217_91%_60%/0.15),_transparent_60%)]" />
         <div className="container mx-auto px-6 relative">
           <motion.div
@@ -69,7 +87,7 @@ export default function Landing() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate("/signup")}
                 size="lg"
                 className="gradient-primary text-foreground border-0 text-base px-8 h-12 glow-blue"
               >
@@ -78,9 +96,10 @@ export default function Landing() {
               <Button
                 variant="outline"
                 size="lg"
+                onClick={() => navigate("/about")}
                 className="border-border text-foreground hover:bg-secondary h-12 px-8 text-base"
               >
-                View Demo
+                Learn More
               </Button>
             </div>
           </motion.div>
@@ -165,6 +184,84 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <section id="testimonials" className="py-24 border-t border-border/50">
+        <div className="container mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="text-label text-accent mb-3">Player Feedback</div>
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+              What our players are saying
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {testimonials.map((t, i) => (
+              <motion.div
+                key={t.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="surface-card-inset p-6"
+              >
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4 italic">"{t.quote}"</p>
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center text-xs font-bold text-foreground">
+                    {t.name.split(" ").map(n => n[0]).join("")}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">{t.name}</div>
+                    <div className="text-xs text-muted-foreground">{t.role}</div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Links */}
+      <section className="py-16 border-t border-border/50">
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              onClick={() => navigate("/about")}
+              className="surface-interactive p-6 cursor-pointer group"
+            >
+              <Building2 className="h-8 w-8 text-primary mb-3 group-hover:scale-110 transition-transform" />
+              <h3 className="text-base font-semibold text-foreground mb-1">About Us</h3>
+              <p className="text-xs text-muted-foreground">Our story, team, vision and company details.</p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              onClick={() => navigate("/about")}
+              className="surface-interactive p-6 cursor-pointer group"
+            >
+              <Eye className="h-8 w-8 text-accent mb-3 group-hover:scale-110 transition-transform" />
+              <h3 className="text-base font-semibold text-foreground mb-1">Our Vision</h3>
+              <p className="text-xs text-muted-foreground">Building the future of AI-powered career intelligence.</p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              onClick={() => navigate("/pricing")}
+              className="surface-interactive p-6 cursor-pointer group"
+            >
+              <Zap className="h-8 w-8 text-primary mb-3 group-hover:scale-110 transition-transform" />
+              <h3 className="text-base font-semibold text-foreground mb-1">Pricing</h3>
+              <p className="text-xs text-muted-foreground">Free and premium plans for every career stage.</p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-24">
         <div className="container mx-auto px-6">
@@ -184,7 +281,7 @@ export default function Landing() {
                 Join thousands of players engineering their career progression with AI-powered intelligence.
               </p>
               <Button
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate("/signup")}
                 size="lg"
                 className="gradient-primary text-foreground border-0 h-12 px-8 glow-blue"
               >
@@ -196,13 +293,47 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-8">
-        <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <img src="/favicon.png" alt="SkillAura PathFinder AI" className="h-5 w-5" />
-            <span className="font-semibold text-foreground">SkillAura PathFinder AI</span>
+      <footer className="border-t border-border/50 py-12">
+        <div className="container mx-auto px-6">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <img src="/favicon.png" alt="SkillAura PathFinder AI" className="h-6 w-6" />
+                <span className="font-bold text-foreground">SkillAura PathFinder AI</span>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                AI-powered career operating system. Gamify your professional growth.
+              </p>
+            </div>
+            <div>
+              <div className="text-label mb-3">Product</div>
+              <div className="space-y-2">
+                <button onClick={() => navigate("/#features")} className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Features</button>
+                <button onClick={() => navigate("/pricing")} className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Pricing</button>
+                <button onClick={() => navigate("/signup")} className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Get Started</button>
+              </div>
+            </div>
+            <div>
+              <div className="text-label mb-3">Company</div>
+              <div className="space-y-2">
+                <button onClick={() => navigate("/about")} className="block text-sm text-muted-foreground hover:text-foreground transition-colors">About</button>
+                <button onClick={() => navigate("/about")} className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Vision</button>
+                <button onClick={() => navigate("/about")} className="block text-sm text-muted-foreground hover:text-foreground transition-colors">Team</button>
+              </div>
+            </div>
+            <div>
+              <div className="text-label mb-3">Legal</div>
+              <div className="space-y-2">
+                <span className="block text-sm text-muted-foreground">Privacy Policy</span>
+                <span className="block text-sm text-muted-foreground">Terms of Service</span>
+                <span className="block text-sm text-muted-foreground">Contact</span>
+              </div>
+            </div>
           </div>
-          <p>© 2026 SkillAura PathFinder AI. All rights reserved.</p>
+          <div className="border-t border-border/50 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+            <p>© 2026 SkillAura PathFinder AI. All rights reserved.</p>
+            <p className="text-xs">Built with ❤️ in Bangalore, India</p>
+          </div>
         </div>
       </footer>
     </div>
