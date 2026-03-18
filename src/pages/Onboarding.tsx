@@ -17,10 +17,10 @@ const careerClasses = [
 ];
 
 const interviewQuestions = [
-  { q: "What is your primary career goal?", options: ["Get a job", "Switch careers", "Level up skills", "Start a business"] },
-  { q: "Which industry interests you most?", options: ["Technology", "Finance", "Healthcare", "Education"] },
-  { q: "What's your experience level?", options: ["Student", "0-2 years", "3-5 years", "5+ years"] },
-  { q: "What's your biggest strength?", options: ["Problem Solving", "Communication", "Technical Skills", "Leadership"] },
+  { key: "goal", q: "What is your primary career goal?", options: ["Get a job", "Switch careers", "Level up skills", "Start a business"] },
+  { key: "industry", q: "Which industry interests you most?", options: ["Technology", "Finance", "Healthcare", "Education"] },
+  { key: "experience", q: "What's your experience level?", options: ["Student", "0-2 years", "3-5 years", "5+ years"] },
+  { key: "strength", q: "What's your biggest strength?", options: ["Problem Solving", "Communication", "Technical Skills", "Leadership"] },
 ];
 
 export default function Onboarding() {
@@ -28,12 +28,12 @@ export default function Onboarding() {
   const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [resumeUploaded, setResumeUploaded] = useState(false);
-  const [answers, setAnswers] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [selectedClass, setSelectedClass] = useState("");
   const [interviewIdx, setInterviewIdx] = useState(0);
+  const [saving, setSaving] = useState(false);
 
   const handleResumeUpload = () => {
-    // Simulate resume analysis
     setTimeout(() => {
       setResumeUploaded(true);
       toast.success("Resume analyzed! Skills extracted.");
@@ -41,7 +41,8 @@ export default function Onboarding() {
   };
 
   const handleAnswer = (answer: string) => {
-    const newAnswers = [...answers, answer];
+    const key = interviewQuestions[interviewIdx].key;
+    const newAnswers = { ...answers, [key]: answer };
     setAnswers(newAnswers);
     if (interviewIdx < interviewQuestions.length - 1) {
       setInterviewIdx(interviewIdx + 1);
@@ -52,15 +53,64 @@ export default function Onboarding() {
 
   const handleComplete = async () => {
     if (!user) return;
+    setSaving(true);
     try {
+      // 1. Update career profile with class + interview data + initial stats based on strength
+      const statBoost: Record<string, any> = {};
+      if (answers.strength === "Problem Solving") { statBoost.stat_problem_solving = 20; statBoost.stat_logic = 15; }
+      else if (answers.strength === "Communication") { statBoost.stat_communication = 20; statBoost.stat_leadership = 15; }
+      else if (answers.strength === "Technical Skills") { statBoost.stat_technical = 20; statBoost.stat_logic = 15; }
+      else if (answers.strength === "Leadership") { statBoost.stat_leadership = 20; statBoost.stat_communication = 15; }
+
       await supabase.from("career_profiles").update({
         career_class: selectedClass as any,
-        interview_data: { answers } as any,
+        interview_data: {
+          goals: answers.goal || "",
+          interests: answers.industry || "",
+          strengths: answers.strength || "",
+          experience: answers.experience || "",
+        } as any,
+        target_career: `${careerClasses.find(c => c.id === selectedClass)?.name || "Explorer"}`,
+        ...statBoost,
       }).eq("user_id", user.id);
-      toast.success("Career profile created!");
+
+      // 2. Assign starter quests from quests table
+      const { data: quests } = await supabase.from("quests").select("id").limit(4);
+      if (quests && quests.length > 0) {
+        const questInserts = quests.map(q => ({
+          user_id: user.id,
+          quest_id: q.id,
+          status: "available" as const,
+          progress: 0,
+        }));
+        await supabase.from("user_quests").insert(questInserts);
+      }
+
+      // 3. Assign starter skills
+      const { data: skills } = await supabase.from("skills").select("id").limit(7);
+      if (skills && skills.length > 0) {
+        // Check which skills user already has
+        const { data: existing } = await supabase.from("user_skills").select("skill_id").eq("user_id", user.id);
+        const existingIds = new Set((existing || []).map(e => e.skill_id));
+        const newSkills = skills.filter(s => !existingIds.has(s.id)).map(s => ({
+          user_id: user.id,
+          skill_id: s.id,
+          level: 1,
+          xp: 0,
+          unlocked: true,
+        }));
+        if (newSkills.length > 0) {
+          await supabase.from("user_skills").insert(newSkills);
+        }
+      }
+
+      toast.success("Career profile created! Welcome aboard.");
       navigate("/dashboard");
-    } catch {
-      toast.error("Failed to save profile");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save profile. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -99,11 +149,6 @@ export default function Onboarding() {
                 <div className="bg-primary/10 border border-primary/20 rounded-xl p-6">
                   <Check className="h-8 w-8 text-primary mx-auto mb-2" />
                   <p className="text-sm text-foreground font-medium">Resume analyzed successfully!</p>
-                  <div className="flex flex-wrap gap-2 justify-center mt-3">
-                    {["Python", "React", "SQL", "Machine Learning", "Git"].map(s => (
-                      <span key={s} className="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary font-mono">{s}</span>
-                    ))}
-                  </div>
                 </div>
               )}
               
@@ -179,8 +224,8 @@ export default function Onboarding() {
                   <div><span className="text-label">Class</span><div className="font-mono font-bold text-primary">{careerClasses.find(c => c.id === selectedClass)?.name}</div></div>
                 </div>
               </div>
-              <Button className="gradient-primary text-foreground border-0 glow-blue" onClick={handleComplete}>
-                Enter Command Center <ChevronRight className="ml-1 h-4 w-4" />
+              <Button className="gradient-primary text-foreground border-0 glow-blue" onClick={handleComplete} disabled={saving}>
+                {saving ? "Initializing..." : "Enter Command Center"} <ChevronRight className="ml-1 h-4 w-4" />
               </Button>
             </motion.div>
           )}

@@ -332,7 +332,7 @@ export default function Landing() {
           </div>
           <div className="border-t border-border/50 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
             <p>© 2026 SkillAura PathFinder AI. All rights reserved.</p>
-            <p className="text-xs">Built with ❤️ in Bangalore, India</p>
+            <p className="text-xs">Built with ❤️ by the SkillAura team</p>
           </div>
         </div>
       </footer>
