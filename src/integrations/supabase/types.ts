@@ -513,6 +513,10 @@ export type Database = {
       }
     }
     Functions: {
+      complete_quest: {
+        Args: { p_quest_id: number; p_user_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -520,6 +524,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_level: { Args: { p_user_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "player" | "recruiter" | "admin" | "super_admin"
