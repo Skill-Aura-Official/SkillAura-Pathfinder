@@ -1,13 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Shield, Bell, CreditCard } from "lucide-react";
+import { User, Shield, Bell, CreditCard, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
   const { user } = useAuth();
-  const [displayName, setDisplayName] = useState(user?.user_metadata?.full_name || "");
+  const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
+  const [plan, setPlan] = useState("free");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    Promise.all([
+      supabase.from("profiles").select("display_name, bio").eq("user_id", user.id).single(),
+      supabase.from("subscriptions").select("plan").eq("user_id", user.id).single(),
+    ]).then(([profileRes, subRes]) => {
+      if (profileRes.data) {
+        setDisplayName(profileRes.data.display_name || "");
+        setBio(profileRes.data.bio || "");
+      }
+      if (subRes.data) setPlan(subRes.data.plan);
+      setLoading(false);
+    });
+  }, [user]);
+
+  const saveProfile = async () => {
+    if (!user) return;
+    setSaving(true);
+    await supabase.from("profiles").update({ display_name: displayName, bio }).eq("user_id", user.id);
+    setSaving(false);
+    toast.success("Profile updated!");
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   return (
     <>
@@ -22,9 +53,11 @@ export default function SettingsPage() {
           <div className="space-y-3">
             <div><label className="text-xs text-muted-foreground block mb-1">Display Name</label>
               <Input value={displayName} onChange={e => setDisplayName(e.target.value)} className="bg-secondary border-border" /></div>
+            <div><label className="text-xs text-muted-foreground block mb-1">Bio</label>
+              <textarea value={bio} onChange={e => setBio(e.target.value)} className="w-full rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground resize-none h-20" placeholder="Tell us about yourself..." /></div>
             <div><label className="text-xs text-muted-foreground block mb-1">Email</label>
               <Input value={user?.email || ""} disabled className="bg-secondary border-border opacity-60" /></div>
-            <Button size="sm" className="gradient-primary text-foreground border-0">Save Changes</Button>
+            <Button size="sm" onClick={saveProfile} disabled={saving} className="gradient-primary text-foreground border-0">{saving ? "Saving..." : "Save Changes"}</Button>
           </div>
         </div>
 
@@ -32,26 +65,18 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2 mb-4"><CreditCard className="h-4 w-4 text-accent" /><span className="text-label">Subscription</span></div>
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm font-semibold text-foreground">Free Plan</div>
-              <div className="text-xs text-muted-foreground">Basic quests, resume analysis, career matches</div>
+              <div className="text-sm font-semibold text-foreground capitalize">{plan} Plan</div>
+              <div className="text-xs text-muted-foreground">
+                {plan === "free" ? "Basic quests, resume analysis, career matches" : "Full access to all features"}
+              </div>
             </div>
-            <Button size="sm" variant="outline" className="border-primary text-primary">Upgrade to Premium — ₹199/mo</Button>
-          </div>
-        </div>
-
-        <div className="surface-card-inset p-6">
-          <div className="flex items-center gap-2 mb-4"><Bell className="h-4 w-4 text-rank-c" /><span className="text-label">Notifications</span></div>
-          <div className="space-y-2 text-sm">
-            {["Quest reminders", "Weekly progress reports", "New achievement alerts", "Leaderboard updates"].map(n => (
-              <label key={n} className="flex items-center gap-3 text-foreground cursor-pointer">
-                <input type="checkbox" defaultChecked className="rounded border-border" />{n}
-              </label>
-            ))}
+            {plan === "free" && <Button size="sm" variant="outline" className="border-primary text-primary">Upgrade to Premium</Button>}
           </div>
         </div>
 
         <div className="surface-card-inset p-6">
           <div className="flex items-center gap-2 mb-4"><Shield className="h-4 w-4 text-destructive" /><span className="text-label">Security</span></div>
+          <p className="text-xs text-muted-foreground mb-3">Manage your authentication settings.</p>
           <Button size="sm" variant="outline" className="border-border">Change Password</Button>
         </div>
       </div>
