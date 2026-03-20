@@ -80,11 +80,37 @@ export default function QuestLog() {
     return <div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
+  const generateQuests = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-quests");
+      if (error) throw error;
+      if (data?.inserted > 0) {
+        toast.success(`${data.inserted} new AI-generated quests assigned!`);
+        await fetchQuests();
+      } else {
+        toast.info("No new quests could be generated right now.");
+      }
+    } catch (e: any) {
+      const msg = e?.message?.includes("429") ? "Rate limited. Try again later." :
+                  e?.message?.includes("402") ? "AI credits depleted." : "Failed to generate quests.";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Quest Log</h1>
-        <p className="text-sm text-muted-foreground">Accept quests to earn XP and level up your abilities.</p>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Quest Log</h1>
+          <p className="text-sm text-muted-foreground">Accept quests to earn XP and level up your abilities.</p>
+        </div>
+        <Button size="sm" onClick={generateQuests} disabled={loading} className="gradient-primary text-foreground border-0">
+          <Zap className="h-3.5 w-3.5 mr-1" /> Generate AI Quests
+        </Button>
       </motion.div>
 
       <div className="flex gap-2 mb-6 flex-wrap">
@@ -98,7 +124,10 @@ export default function QuestLog() {
       {filtered.length === 0 ? (
         <div className="surface-card-inset p-12 text-center">
           <Swords className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground">No quests assigned yet. Complete onboarding to get starter quests.</p>
+          <p className="text-sm text-muted-foreground mb-4">No quests assigned yet.</p>
+          <Button size="sm" onClick={generateQuests} disabled={loading} className="gradient-primary text-foreground border-0">
+            <Zap className="h-3.5 w-3.5 mr-1" /> Generate Your First Quests
+          </Button>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
