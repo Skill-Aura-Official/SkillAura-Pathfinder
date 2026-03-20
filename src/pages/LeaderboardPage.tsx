@@ -1,44 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Crown, Trophy, Medal } from "lucide-react";
+import { Crown, Trophy, Medal, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
-type Category = "global" | "data_science" | "engineering" | "quest_completion";
-
-const leaderboards: Record<Category, { rank: number; name: string; level: number; xp: string; badge: string; isUser?: boolean }[]> = {
-  global: [
-    { rank: 1, name: "ArcaneKoder", level: 42, xp: "12.4K", badge: "S" },
-    { rank: 2, name: "NeuralNinja", level: 38, xp: "11.1K", badge: "A" },
-    { rank: 3, name: "DataPioneer", level: 35, xp: "9.8K", badge: "A" },
-    { rank: 4, name: "CodeWizard", level: 30, xp: "8.2K", badge: "B" },
-    { rank: 5, name: "ByteMaster", level: 28, xp: "7.5K", badge: "B" },
-    { rank: 42, name: "You", level: 7, xp: "1.4K", badge: "D", isUser: true },
-  ],
-  data_science: [
-    { rank: 1, name: "DataPioneer", level: 35, xp: "9.8K", badge: "A" },
-    { rank: 2, name: "NeuralNinja", level: 38, xp: "8.5K", badge: "A" },
-    { rank: 3, name: "MLExplorer", level: 25, xp: "6.2K", badge: "B" },
-    { rank: 12, name: "You", level: 7, xp: "1.4K", badge: "D", isUser: true },
-  ],
-  engineering: [
-    { rank: 1, name: "ArcaneKoder", level: 42, xp: "12.4K", badge: "S" },
-    { rank: 2, name: "CodeWizard", level: 30, xp: "8.2K", badge: "B" },
-    { rank: 3, name: "ByteMaster", level: 28, xp: "7.5K", badge: "B" },
-    { rank: 8, name: "You", level: 7, xp: "1.4K", badge: "D", isUser: true },
-  ],
-  quest_completion: [
-    { rank: 1, name: "QuestHunter99", level: 40, xp: "324 quests", badge: "S" },
-    { rank: 2, name: "ArcaneKoder", level: 42, xp: "298 quests", badge: "S" },
-    { rank: 3, name: "NeuralNinja", level: 38, xp: "275 quests", badge: "A" },
-    { rank: 55, name: "You", level: 7, xp: "8 quests", badge: "D", isUser: true },
-  ],
-};
+interface LeaderboardEntry {
+  user_id: string | null;
+  display_name: string | null;
+  level: number | null;
+  current_xp: number | null;
+  rank: string | null;
+  career_class: string | null;
+}
 
 const badgeColor: Record<string, string> = { S: "text-rank-s", A: "text-rank-a", B: "text-rank-b", C: "text-rank-c", D: "text-rank-d", E: "text-rank-e" };
-const rankIcon = (rank: number) => rank === 1 ? <Crown className="h-4 w-4 text-xp" /> : rank === 2 ? <Trophy className="h-4 w-4 text-muted-foreground" /> : rank === 3 ? <Medal className="h-4 w-4 text-accent" /> : null;
+const rankIcon = (rank: number) => rank === 1 ? <Crown className="h-4 w-4 text-accent" /> : rank === 2 ? <Trophy className="h-4 w-4 text-muted-foreground" /> : rank === 3 ? <Medal className="h-4 w-4 text-accent" /> : null;
 
 export default function LeaderboardPage() {
-  const [category, setCategory] = useState<Category>("global");
-  const data = leaderboards[category];
+  const { user } = useAuth();
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.from("leaderboard").select("*").order("current_xp", { ascending: false }).limit(50)
+      .then(({ data }) => {
+        if (data) setEntries(data as LeaderboardEntry[]);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   return (
     <>
@@ -47,30 +38,33 @@ export default function LeaderboardPage() {
         <p className="text-sm text-muted-foreground">Compete and rise through the ranks.</p>
       </motion.div>
 
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {([["global", "Global"], ["data_science", "Data Science"], ["engineering", "Engineering"], ["quest_completion", "Quest Completion"]] as [Category, string][]).map(([key, label]) => (
-          <button key={key} onClick={() => setCategory(key)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${category === key ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className="surface-card-inset">
-        {data.map((p, i) => (
-          <motion.div key={p.rank + p.name} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
-            className={`flex items-center justify-between py-3 px-4 border-b border-border/30 last:border-0 ${p.isUser ? "bg-primary/10" : ""}`}>
-            <div className="flex items-center gap-3">
-              <span className="w-8 flex justify-center">{rankIcon(p.rank) || <span className="text-xs font-mono text-muted-foreground">#{p.rank}</span>}</span>
-              <span className={`font-medium text-sm ${p.isUser ? "text-primary" : "text-foreground"}`}>{p.name}</span>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-xs font-mono text-muted-foreground">Lv{p.level}</span>
-              <span className="text-xs font-mono text-muted-foreground">{p.xp}</span>
-              <span className={`text-sm font-black font-mono ${badgeColor[p.badge]}`}>{p.badge}</span>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+      {entries.length === 0 ? (
+        <div className="surface-card-inset p-12 text-center">
+          <Trophy className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No players on the leaderboard yet. Be the first!</p>
+        </div>
+      ) : (
+        <div className="surface-card-inset">
+          {entries.map((p, i) => {
+            const isUser = p.user_id === user?.id;
+            const rank = i + 1;
+            return (
+              <motion.div key={p.user_id || i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                className={`flex items-center justify-between py-3 px-4 border-b border-border/30 last:border-0 ${isUser ? "bg-primary/10" : ""}`}>
+                <div className="flex items-center gap-3">
+                  <span className="w-8 flex justify-center">{rankIcon(rank) || <span className="text-xs font-mono text-muted-foreground">#{rank}</span>}</span>
+                  <span className={`font-medium text-sm ${isUser ? "text-primary" : "text-foreground"}`}>{p.display_name || "Unknown"}</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-xs font-mono text-muted-foreground">Lv{p.level || 1}</span>
+                  <span className="text-xs font-mono text-muted-foreground">{(p.current_xp || 0).toLocaleString()} XP</span>
+                  <span className={`text-sm font-black font-mono ${badgeColor[p.rank || "E"]}`}>{p.rank || "E"}</span>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
