@@ -14,11 +14,12 @@ const features = [
 ];
 
 const stats = [
-  { value: "50K+", label: "Active Players" },
-  { value: "1.2M", label: "Quests Completed" },
-  { value: "94%", label: "Career Match Rate" },
-  { value: "S-Rank", label: "Top Achievers" },
+  { value: "AI-Powered", label: "Career Intelligence" },
+  { value: "6 Classes", label: "Career Paths" },
+  { value: "E → S", label: "Rank Progression" },
+  { value: "Real-Time", label: "Skill Tracking" },
 ];
+
 
 const testimonials = [
   { name: "Ananya R.", role: "Data Scientist at Google", quote: "SkillAura turned my scattered learning into a clear career path. Went from Rank E to B in 3 months!" },
