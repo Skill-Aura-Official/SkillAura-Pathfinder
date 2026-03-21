@@ -57,11 +57,16 @@ export default function DashboardLayout() {
     Promise.all([
       supabase.from("user_roles").select("role").eq("user_id", user.id),
       supabase.from("career_profiles").select("level, current_xp, max_xp, rank, career_class").eq("user_id", user.id).single(),
-      supabase.from("profiles").select("display_name").eq("user_id", user.id).single(),
+      supabase.from("profiles").select("display_name, theme").eq("user_id", user.id).single(),
     ]).then(([rolesRes, careerRes, profileRes]) => {
       if (rolesRes.data) setRoles(rolesRes.data.map((r) => r.role));
       if (careerRes.data) setCareer(careerRes.data as unknown as CareerData);
-      if (profileRes.data) setDisplayName(profileRes.data.display_name || "");
+      if (profileRes.data) {
+        setDisplayName(profileRes.data.display_name || "");
+        // Apply user theme
+        const theme = (profileRes.data as any).theme || "ocean";
+        document.body.setAttribute("data-theme", theme);
+      }
     });
   }, [user]);
 
