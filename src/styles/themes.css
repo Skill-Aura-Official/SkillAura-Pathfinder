@@ -1,0 +1,53 @@
+/* Theme variables — applied via data-theme attribute on body */
+
+/* Ocean Theme (default) */
+[data-theme="ocean"] {
+  --background: 222 84% 5%;
+  --primary: 195 90% 48%;
+  --primary-foreground: 222 84% 5%;
+  --accent: 180 70% 45%;
+  --ring: 195 90% 48%;
+  --sidebar-primary: 195 90% 48%;
+}
+
+/* Windy Theme */
+[data-theme="windy"] {
+  --background: 160 30% 5%;
+  --primary: 160 84% 40%;
+  --primary-foreground: 160 30% 5%;
+  --accent: 140 60% 50%;
+  --ring: 160 84% 40%;
+  --sidebar-primary: 160 84% 40%;
+  --card: 160 20% 10%;
+  --secondary: 160 20% 15%;
+  --border: 160 20% 15%;
+  --input: 160 20% 15%;
+}
+
+/* Wrench Theme */
+[data-theme="wrench"] {
+  --background: 220 10% 6%;
+  --primary: 220 10% 55%;
+  --primary-foreground: 220 10% 98%;
+  --accent: 35 90% 55%;
+  --ring: 220 10% 55%;
+  --sidebar-primary: 220 10% 55%;
+  --card: 220 8% 11%;
+  --secondary: 220 8% 16%;
+  --border: 220 8% 16%;
+  --input: 220 8% 16%;
+}
+
+/* Blood Moon Theme */
+[data-theme="bloodmoon"] {
+  --background: 0 40% 4%;
+  --primary: 0 75% 50%;
+  --primary-foreground: 0 0% 98%;
+  --accent: 340 80% 55%;
+  --ring: 0 75% 50%;
+  --sidebar-primary: 0 75% 50%;
+  --card: 0 25% 9%;
+  --secondary: 0 20% 14%;
+  --border: 0 20% 14%;
+  --input: 0 20% 14%;
+}

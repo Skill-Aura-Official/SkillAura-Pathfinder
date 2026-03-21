@@ -10,11 +10,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured");
 
-    // Try to get user context from auth header
+    const { messages } = await req.json();
+
+    // Get user context from auth header
     let userContext = "";
     const authHeader = req.headers.get("authorization");
     if (authHeader) {
@@ -27,7 +28,7 @@ serve(async (req) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           const [careerRes, profileRes, skillsRes] = await Promise.all([
-            supabase.from("career_profiles").select("career_class, level, rank, current_xp, target_career, salary_estimate, job_readiness, interview_data").eq("user_id", user.id).single(),
+            supabase.from("career_profiles").select("career_class, level, rank, current_xp, target_career, salary_estimate, job_readiness, interview_data, resume_data").eq("user_id", user.id).single(),
             supabase.from("profiles").select("display_name").eq("user_id", user.id).single(),
             supabase.from("user_skills").select("level, skill:skills(name)").eq("user_id", user.id),
           ]);
@@ -35,6 +36,7 @@ serve(async (req) => {
           const profile = profileRes.data;
           const skills = (skillsRes.data || []) as any[];
           const interview = cp?.interview_data as any;
+          const resume = cp?.resume_data as any;
           
           userContext = `\n\nCurrent user context:
 - Name: ${profile?.display_name || "Unknown"}
@@ -46,62 +48,63 @@ serve(async (req) => {
 - Skills: ${skills.map(s => `${(s.skill as any)?.name} (Lv.${s.level})`).join(", ") || "None yet"}
 - Career Goal: ${interview?.goals || "Not set"}
 - Strengths: ${interview?.strengths || "Not set"}
-- Interests: ${interview?.interests || "Not set"}
 - Experience: ${interview?.experience || "Not set"}
+${resume?.summary ? `- Resume Summary: ${resume.summary}` : ""}
+${resume?.career_paths ? `- Suggested Paths: ${resume.career_paths.join(", ")}` : ""}
 
-Use this context to give personalized, specific career advice. Reference their actual skills, level, and goals.`;
+Use this context to give personalized, specific career advice. Reference their actual skills, level, and goals. Never give generic advice.`;
         }
       } catch (e) {
         console.log("Could not fetch user context:", e);
       }
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content: `You are an AI Career Mentor for SkillAura PathFinder AI — a gamified career intelligence platform. You help users with:
-- Career decisions and strategy
-- Skills to learn based on their career goals
-- Industry demand and market trends
-- Salary expectations and negotiation
-- Learning roadmaps and quest suggestions
-- Interview preparation tips
+    const systemPrompt = `You are an AI Career System for SkillAura PathFinder AI — a gamified RPG career intelligence platform. You are NOT a chatbot. You are a SYSTEM INTELLIGENCE.
 
-Keep responses helpful, concise, and actionable. Use RPG/gaming terminology when appropriate (quests, leveling up, skill trees, etc.). Be encouraging and motivating.${userContext}`
+Behavior rules:
+- Address the user by name when possible
+- Reference their ACTUAL skills, level, rank, and goals
+- Give specific, actionable advice — not generic motivation
+- Use RPG terminology: quests, skill trees, leveling up, rank advancement
+- When suggesting next steps, frame them as quests or missions
+- Be direct, strategic, and data-driven
+- Format responses with system-style headers like [ANALYSIS], [RECOMMENDATION], [QUEST SUGGESTION]${userContext}`;
+
+    // Call Gemini API directly
+    const geminiMessages = messages.map((m: any) => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: m.content }],
+    }));
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: geminiMessages,
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048,
           },
-          ...messages,
-        ],
-      }),
-    });
+        }),
+      }
+    );
 
     if (!response.ok) {
+      const errText = await response.text();
+      console.error("Gemini error:", response.status, errText);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited. Please try again later." }), {
           status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits depleted. Please add credits." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || "I'm having trouble right now.";
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text || "System error. Please retry.";
 
     return new Response(JSON.stringify({ content }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
