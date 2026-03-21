@@ -10,8 +10,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GEMINI_API_KEY is not configured");
 
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
@@ -44,8 +44,7 @@ serve(async (req) => {
     const skillNames = skills.map(s => `${s.skill?.name} (Lv${s.level})`).join(", ");
     const completedQuestTitles = completedQuests.map(q => q.quest?.title).join(", ");
 
-    // Use AI to generate personalized quests
-    const prompt = `You are a career quest generator for a gamified career platform.
+    const prompt = `You are a career quest generator for a gamified RPG career platform.
 
 User Profile:
 - Career Class: ${career?.career_class || "explorer"}
@@ -54,7 +53,6 @@ User Profile:
 - Skills: ${skillNames || "None yet"}
 - Completed Quests: ${completedQuestTitles || "None yet"}
 - Goal: ${interview?.goals || "Not set"}
-- Strengths: ${interview?.strengths || "Not set"}
 - Stats: Technical=${career?.stat_technical||10}, Logic=${career?.stat_logic||10}, Creativity=${career?.stat_creativity||10}, Communication=${career?.stat_communication||10}, Leadership=${career?.stat_leadership||10}, Problem Solving=${career?.stat_problem_solving||10}
 
 Generate 3 personalized quests that:
@@ -64,73 +62,45 @@ Generate 3 personalized quests that:
 
 Return ONLY a JSON array with objects having: title, objective, quest_type (daily/weekly/boss), difficulty (E/D/C/B/A/S), xp_reward (number), skill_reward (string or null), career_class (matching their class).`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        tools: [{
-          type: "function",
-          function: {
-            name: "generate_quests",
-            description: "Generate personalized career quests for the user",
-            parameters: {
-              type: "object",
-              properties: {
-                quests: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      title: { type: "string" },
-                      objective: { type: "string" },
-                      quest_type: { type: "string", enum: ["daily", "weekly", "boss"] },
-                      difficulty: { type: "string", enum: ["E", "D", "C", "B", "A", "S"] },
-                      xp_reward: { type: "number" },
-                      skill_reward: { type: "string" },
-                      career_class: { type: "string" },
-                    },
-                    required: ["title", "objective", "quest_type", "difficulty", "xp_reward"],
-                  },
-                },
-              },
-              required: ["quests"],
-            },
-          },
-        }],
-        tool_choice: { type: "function", function: { name: "generate_quests" } },
-        messages: [
-          { role: "system", content: "You are a quest generator. Generate personalized career development quests." },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.5, maxOutputTokens: 1024 },
+        }),
+      }
+    );
 
     if (!response.ok) {
+      const errText = await response.text();
+      console.error("Gemini error:", response.status, errText);
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limited. Try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits depleted." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-      const t = await response.text();
-      console.error("AI error:", response.status, t);
       throw new Error("AI generation failed");
     }
 
     const data = await response.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+    
+    // Extract JSON
+    let jsonStr = rawText;
+    const jsonMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) jsonStr = jsonMatch[1];
+    
     let quests: any[] = [];
-
-    if (toolCall?.function?.arguments) {
-      const parsed = JSON.parse(toolCall.function.arguments);
-      quests = parsed.quests || [];
+    try {
+      const parsed = JSON.parse(jsonStr.trim());
+      quests = Array.isArray(parsed) ? parsed : parsed.quests || [];
+    } catch {
+      console.error("Failed to parse quest JSON:", rawText);
+      quests = [];
     }
 
-    // Insert generated quests into DB
+    // Insert generated quests
     const insertedQuests: string[] = [];
     for (const q of quests) {
       const { data: quest } = await supabase.from("quests").insert({
