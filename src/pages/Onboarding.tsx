@@ -83,7 +83,7 @@ export default function Onboarding() {
 
   const checkUsername = useCallback(async (name: string) => {
     if (name.length < 3) { setUsernameError("Min 3 characters"); return false; }
-    const { data } = await supabase.from("profiles").select("id").eq("display_name", name).limit(1);
+    const { data } = await supabase.from("profiles").select("id").or(`username.eq.${name},display_name.eq.${name}`).limit(1);
     if (data && data.length > 0) { setUsernameError("Username taken"); return false; }
     setUsernameError("");
     return true;
@@ -99,7 +99,7 @@ export default function Onboarding() {
     setSaving(true);
     const { error } = await supabase.auth.signUp({
       email, password,
-      options: { data: { full_name: username.trim() }, emailRedirectTo: window.location.origin },
+      options: { data: { full_name: username.trim(), username: username.trim().toLowerCase() }, emailRedirectTo: window.location.origin },
     });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
@@ -160,9 +160,10 @@ export default function Onboarding() {
     setPhase("assigning");
 
     try {
-      // Save theme
+      // Save theme and username
       await supabase.from("profiles").update({
         display_name: username.trim() || displayName,
+        username: username.trim().toLowerCase(),
         theme: selectedTheme,
       }).eq("user_id", user.id);
 
