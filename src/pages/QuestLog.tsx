@@ -4,7 +4,7 @@ import { Swords, Zap, Clock, ChevronRight, Shield, Flame, Crown, Loader2 } from 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { handleQuestCompletion, systemToast } from "@/lib/system-toast";
 
 type QuestFilter = "all" | "daily" | "weekly" | "boss" | "epic";
 
@@ -56,21 +56,19 @@ export default function QuestLog() {
 
   const acceptQuest = async (userQuestId: string) => {
     const { error } = await supabase.from("user_quests").update({ status: "in_progress" as any, started_at: new Date().toISOString() }).eq("id", userQuestId);
-    if (!error) { toast.success("Quest accepted!"); fetchQuests(); }
+    if (!error) {
+      systemToast("quest", "Quest accepted! Begin your mission.");
+      fetchQuests();
+    }
   };
 
   const completeQuest = async (uq: UserQuest) => {
-    const { error } = await supabase.from("user_quests").update({ status: "completed" as any, completed_at: new Date().toISOString(), progress: 100 }).eq("id", uq.id);
-    if (!error && user) {
-      // Add XP
-      await supabase.rpc("update_level", { p_user_id: user.id });
-      const { data: cp } = await supabase.from("career_profiles").select("current_xp").eq("user_id", user.id).single();
-      if (cp) {
-        await supabase.from("career_profiles").update({ current_xp: (cp.current_xp || 0) + uq.quest.xp_reward }).eq("user_id", user.id);
-        await supabase.rpc("update_level", { p_user_id: user.id });
-      }
-      toast.success(`+${uq.quest.xp_reward} XP earned!`);
+    if (!user) return;
+    try {
+      await handleQuestCompletion(supabase, user.id, uq.id, uq.quest.id, uq.quest.xp_reward, uq.quest.skill_reward);
       fetchQuests();
+    } catch {
+      systemToast("quest", "Failed to complete quest. Try again.");
     }
   };
 
@@ -87,15 +85,15 @@ export default function QuestLog() {
       const { data, error } = await supabase.functions.invoke("generate-quests");
       if (error) throw error;
       if (data?.inserted > 0) {
-        toast.success(`${data.inserted} new AI-generated quests assigned!`);
+        systemToast("quest", `${data.inserted} new AI-generated quests assigned!`);
         await fetchQuests();
       } else {
-        toast.info("No new quests could be generated right now.");
+        systemToast("quest", "No new quests could be generated right now.");
       }
     } catch (e: any) {
       const msg = e?.message?.includes("429") ? "Rate limited. Try again later." :
                   e?.message?.includes("402") ? "AI credits depleted." : "Failed to generate quests.";
-      toast.error(msg);
+      systemToast("quest", msg);
     } finally {
       setLoading(false);
     }
