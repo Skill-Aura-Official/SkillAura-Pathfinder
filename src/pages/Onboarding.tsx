@@ -160,9 +160,10 @@ export default function Onboarding() {
     setPhase("assigning");
 
     try {
-      // Save theme
+      // Save theme and username
       await supabase.from("profiles").update({
         display_name: username.trim() || displayName,
+        username: username.trim().toLowerCase(),
         theme: selectedTheme,
       }).eq("user_id", user.id);
 
