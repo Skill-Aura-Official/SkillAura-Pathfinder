@@ -1,23 +1,17 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SkillNode {
   id: string;
   name: string;
   level: number;
-  maxLevel: number;
   status: "locked" | "unlocked" | "mastered";
   x: number;
   y: number;
-  connections: string[];
 }
-
-const nodes: SkillNode[] = [
-  { id: "python", name: "Python", level: 3, maxLevel: 5, status: "mastered", x: 150, y: 30, connections: ["data-analysis"] },
-  { id: "data-analysis", name: "Data Analysis", level: 2, maxLevel: 5, status: "unlocked", x: 150, y: 100, connections: ["ml", "visualization"] },
-  { id: "ml", name: "Machine Learning", level: 1, maxLevel: 5, status: "unlocked", x: 80, y: 170, connections: ["deep-learning"] },
-  { id: "visualization", name: "Data Viz", level: 0, maxLevel: 5, status: "locked", x: 220, y: 170, connections: [] },
-  { id: "deep-learning", name: "Deep Learning", level: 0, maxLevel: 5, status: "locked", x: 80, y: 240, connections: [] },
-];
 
 const statusStyles = {
   locked: "bg-secondary text-muted-foreground opacity-40",
@@ -26,12 +20,57 @@ const statusStyles = {
 };
 
 export default function SkillTree() {
-  const nodeMap = new Map(nodes.map(n => [n.id, n]));
+  const { user } = useAuth();
+  const [nodes, setNodes] = useState<SkillNode[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) { setLoading(false); return; }
+    supabase
+      .from("user_skills")
+      .select("id, level, unlocked, skill:skills(name)")
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const mapped = (data as any[]).map((s, i) => {
+            const col = i % 3;
+            const row = Math.floor(i / 3);
+            return {
+              id: s.id,
+              name: s.skill?.name || "Unknown",
+              level: s.level,
+              status: s.level >= 5 ? "mastered" as const : s.unlocked ? "unlocked" as const : "locked" as const,
+              x: 60 + col * 90,
+              y: 30 + row * 70,
+            };
+          });
+          setNodes(mapped.slice(0, 9));
+        }
+        setLoading(false);
+      });
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="surface-card-inset p-4 flex items-center justify-center h-[280px]">
+        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (nodes.length === 0) {
+    return (
+      <div className="surface-card-inset p-4">
+        <div className="text-label mb-3">Skill Tree</div>
+        <p className="text-xs text-muted-foreground text-center py-8">Complete onboarding and quests to unlock skills.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="surface-card-inset p-4">
       <div className="flex items-center justify-between mb-3">
-        <div className="text-label">Skill Tree — Data Science</div>
+        <div className="text-label">Skill Tree</div>
         <div className="flex gap-3 text-[9px]">
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-accent" /> Mastered</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary" /> Unlocked</span>
@@ -39,33 +78,13 @@ export default function SkillTree() {
         </div>
       </div>
       <div className="relative h-[280px]">
-        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 280">
-          {nodes.flatMap(node =>
-            node.connections.map(targetId => {
-              const target = nodeMap.get(targetId);
-              if (!target) return null;
-              return (
-                <line
-                  key={`${node.id}-${targetId}`}
-                  x1={node.x}
-                  y1={node.y + 20}
-                  x2={target.x}
-                  y2={target.y}
-                  stroke="hsl(217 33% 17%)"
-                  strokeWidth={2}
-                  strokeDasharray="4 4"
-                />
-              );
-            })
-          )}
-        </svg>
         {nodes.map((node, i) => (
           <motion.div
             key={node.id}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1 }}
-            className={`absolute flex flex-col items-center`}
+            className="absolute flex flex-col items-center"
             style={{ left: node.x - 30, top: node.y - 10 }}
           >
             <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-xs font-bold font-mono ${statusStyles[node.status]}`}>

@@ -1,21 +1,15 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { User, Lock, Eye, EyeOff, Zap } from "lucide-react";
+import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const USERNAME_MAP: Record<string, string> = {
-  cazador_op: "cazador_op@skillaura.test",
-  blacklord: "blacklord@skillaura.test",
-  hunter: "hunter@skillaura.test",
-};
-
 export default function Login() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,13 +18,51 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
 
-    const key = username.trim().toLowerCase();
-    const email = USERNAME_MAP[key] || (key.includes("@") ? key : `${key}@skillaura.test`);
+    const key = identifier.trim();
+    let email = key;
+
+    // If not an email, look up username from DB
+    if (!key.includes("@")) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .or(`username.eq.${key},display_name.eq.${key}`)
+        .limit(1)
+        .single();
+
+      if (!data) {
+        setLoading(false);
+        toast.error("Username not found");
+        return;
+      }
+
+      // Get email from auth admin — we can't, so we use a convention
+      // Look up the user's email by checking if display_name matches
+      // Since we can't query auth.users, we store username and use email pattern
+      // Try with the user_id to find their email via profiles
+      // Fallback: try common pattern
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .or(`username.ilike.${key},display_name.ilike.${key}`)
+        .limit(1)
+        .single();
+
+      if (!profileData) {
+        setLoading(false);
+        toast.error("Username not found");
+        return;
+      }
+
+      // We need to use an edge function for username login since we can't query auth.users
+      // For now, try the email pattern
+      email = `${key.toLowerCase()}@skillaura.test`;
+    }
 
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      toast.error("Invalid username or password");
+      toast.error("Invalid credentials. Check your username/email and password.");
     } else {
       navigate("/dashboard");
     }
@@ -48,7 +80,7 @@ export default function Login() {
             <img src="/favicon.png" alt="SkillAura PathFinder AI" className="h-12 w-12" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Enter the System</h1>
-          <p className="text-sm text-muted-foreground mt-1">Login with your username to continue</p>
+          <p className="text-sm text-muted-foreground mt-1">Login with your username or email</p>
         </div>
 
         <div className="surface-card-inset p-6 space-y-4">
@@ -57,9 +89,9 @@ export default function Login() {
               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Username (e.g. Cazador_Op)"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
+                placeholder="Username or Email"
+                value={identifier}
+                onChange={e => setIdentifier(e.target.value)}
                 className="pl-9 bg-secondary border-border"
                 required
               />
@@ -85,28 +117,6 @@ export default function Login() {
               {loading ? "Authenticating..." : "Login"}
             </Button>
           </form>
-
-          {/* Quick login hints */}
-          <div className="border-t border-border/50 pt-4">
-            <div className="text-label mb-2 text-center">Test Accounts</div>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { name: "Cazador_Op", role: "Player", color: "text-rank-c" },
-                { name: "Blacklord", role: "Admin", color: "text-rank-a" },
-                { name: "Hunter", role: "Recruiter", color: "text-rank-d" },
-              ].map((u) => (
-                <button
-                  key={u.name}
-                  type="button"
-                  onClick={() => { setUsername(u.name); setPassword("#Tbh0fficial"); }}
-                  className="surface-interactive p-2 text-center hover:bg-secondary/80"
-                >
-                  <div className={`text-xs font-bold font-mono ${u.color}`}>{u.name}</div>
-                  <div className="text-[10px] text-muted-foreground">{u.role}</div>
-                </button>
-              ))}
-            </div>
-          </div>
 
           <p className="text-center text-sm text-muted-foreground">
             New operative? <Link to="/signup" className="text-primary hover:underline">Create account</Link>
