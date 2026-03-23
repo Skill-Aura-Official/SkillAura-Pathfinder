@@ -83,7 +83,7 @@ export default function Onboarding() {
 
   const checkUsername = useCallback(async (name: string) => {
     if (name.length < 3) { setUsernameError("Min 3 characters"); return false; }
-    const { data } = await supabase.from("profiles").select("id").eq("display_name", name).limit(1);
+    const { data } = await supabase.from("profiles").select("id").or(`username.eq.${name},display_name.eq.${name}`).limit(1);
     if (data && data.length > 0) { setUsernameError("Username taken"); return false; }
     setUsernameError("");
     return true;
