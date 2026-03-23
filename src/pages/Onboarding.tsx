@@ -99,7 +99,7 @@ export default function Onboarding() {
     setSaving(true);
     const { error } = await supabase.auth.signUp({
       email, password,
-      options: { data: { full_name: username.trim() }, emailRedirectTo: window.location.origin },
+      options: { data: { full_name: username.trim(), username: username.trim().toLowerCase() }, emailRedirectTo: window.location.origin },
     });
     setSaving(false);
     if (error) { toast.error(error.message); return; }
