@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Trophy, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/integrations/api/client";
 
 export default function Achievements() {
   const { user } = useAuth();
@@ -10,23 +10,18 @@ export default function Achievements() {
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("user_achievements")
-      .select("achievement:achievements(title, description, rarity)")
-      .eq("user_id", user.id)
-      .limit(4)
-      .then(({ data }) => {
-        if (data) {
-          setEarned((data as any[]).map(d => ({
-            title: d.achievement?.title || "Unknown",
-            description: d.achievement?.description || null,
-            rarity: d.achievement?.rarity || "common",
-          })));
-        }
-      });
+    api.get("/profile/achievements?limit=4").then((data) => {
+      if (data.achievements) setEarned(data.achievements);
+    }).catch(() => {});
   }, [user]);
 
-  const rarityColor: Record<string, string> = { common: "text-muted-foreground", uncommon: "text-rank-c", rare: "text-rank-b", epic: "text-rank-a", legendary: "text-rank-s" };
+  const rarityColor: Record<string, string> = {
+    common: "text-muted-foreground",
+    uncommon: "text-rank-c",
+    rare: "text-rank-b",
+    epic: "text-rank-a",
+    legendary: "text-rank-s",
+  };
 
   return (
     <div className="surface-card-inset p-4">

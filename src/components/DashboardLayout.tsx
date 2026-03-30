@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import { Home, Swords, Map, Target, BarChart3, Award, MessageSquare, Settings, LogOut, Shield, Briefcase, Crown, Menu, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/integrations/api/client";
 import XPBar from "@/components/dashboard/XPBar";
 
 const playerItems = [
@@ -17,20 +17,15 @@ const playerItems = [
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
-const adminItems = [
-  { icon: Shield, label: "Admin Panel", path: "/admin" },
-];
-
-const recruiterItems = [
-  { icon: Briefcase, label: "Recruiter", path: "/recruiter" },
-];
+const adminItems = [{ icon: Shield, label: "Admin Panel", path: "/admin" }];
+const recruiterItems = [{ icon: Briefcase, label: "Recruiter", path: "/recruiter" }];
 
 interface CareerData {
   level: number;
-  current_xp: number;
-  max_xp: number;
+  currentXp: number;
+  maxXp: number;
   rank: string;
-  career_class: string;
+  careerClass: string;
 }
 
 const classLabels: Record<string, string> = {
@@ -47,31 +42,19 @@ export default function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, signOut } = useAuth();
-  const [roles, setRoles] = useState<string[]>([]);
   const [career, setCareer] = useState<CareerData | null>(null);
-  const [displayName, setDisplayName] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([
-      supabase.from("user_roles").select("role").eq("user_id", user.id),
-      supabase.from("career_profiles").select("level, current_xp, max_xp, rank, career_class").eq("user_id", user.id).single(),
-      supabase.from("profiles").select("display_name, theme").eq("user_id", user.id).single(),
-    ]).then(([rolesRes, careerRes, profileRes]) => {
-      if (rolesRes.data) setRoles(rolesRes.data.map((r) => r.role));
-      if (careerRes.data) setCareer(careerRes.data as unknown as CareerData);
-      if (profileRes.data) {
-        setDisplayName(profileRes.data.display_name || "");
-        // Apply user theme
-        const theme = (profileRes.data as any).theme || "ocean";
-        document.body.setAttribute("data-theme", theme);
-      }
-    });
+    api.get("/profile/career").then((data) => {
+      if (data.career) setCareer(data.career);
+      if (data.theme) document.body.setAttribute("data-theme", data.theme);
+    }).catch(() => {});
   }, [user]);
 
-  const isAdmin = roles.includes("admin") || roles.includes("super_admin");
-  const isRecruiter = roles.includes("recruiter");
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const isRecruiter = user?.role === "recruiter";
 
   const allItems = [
     ...playerItems,
@@ -83,15 +66,16 @@ export default function DashboardLayout() {
     <>
       <div className="flex items-center gap-2 mb-8 px-2 cursor-pointer" onClick={() => navigate("/")}>
         <img src="/favicon.png" alt="SkillAura PathFinder AI" className="h-8 w-8" />
-        <span className="text-base font-bold tracking-tight text-foreground">SkillAura <span className="text-primary">PF</span></span>
+        <span className="text-base font-bold tracking-tight text-foreground">
+          SkillAura <span className="text-primary">PF</span>
+        </span>
       </div>
 
-      {/* User identity */}
       <div className="mb-6 px-2">
         <div className="surface-card-inset p-3">
-          <div className="text-sm font-bold text-foreground">{displayName}</div>
+          <div className="text-sm font-bold text-foreground">{user?.displayName || user?.username}</div>
           <div className="text-[10px] font-mono text-primary mt-0.5">
-            {classLabels[career?.career_class || "explorer"]} • Rank {career?.rank || "E"}
+            {classLabels[career?.careerClass || "explorer"]} • Rank {career?.rank || "E"}
           </div>
           {(isAdmin || isRecruiter) && (
             <div className="mt-1.5 flex gap-1">
@@ -118,9 +102,10 @@ export default function DashboardLayout() {
           </button>
         ))}
       </nav>
+
       <button
         className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        onClick={async () => { await signOut(); navigate("/"); }}
+        onClick={() => { signOut(); navigate("/"); }}
       >
         <LogOut className="h-4 w-4" strokeWidth={1.5} />
         Exit System
@@ -130,12 +115,10 @@ export default function DashboardLayout() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Desktop sidebar */}
       <aside className="hidden lg:flex flex-col w-60 border-r border-border/50 p-4">
         <SidebarContent />
       </aside>
 
-      {/* Mobile menu toggle */}
       <button
         className="lg:hidden fixed top-3 left-3 z-50 p-2 rounded-lg bg-card border border-border/50"
         onClick={() => setMobileMenu(!mobileMenu)}
@@ -143,7 +126,6 @@ export default function DashboardLayout() {
         {mobileMenu ? <X className="h-5 w-5 text-foreground" /> : <Menu className="h-5 w-5 text-foreground" />}
       </button>
 
-      {/* Mobile sidebar overlay */}
       {mobileMenu && (
         <div className="lg:hidden fixed inset-0 z-40">
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setMobileMenu(false)} />
@@ -157,11 +139,11 @@ export default function DashboardLayout() {
         <header className="sticky top-0 z-30 border-b border-border/50 bg-background/80 backdrop-blur-xl px-6 py-3">
           <XPBar
             level={career?.level || 1}
-            currentXP={career?.current_xp || 0}
-            maxXP={career?.max_xp || 200}
+            currentXP={career?.currentXp || 0}
+            maxXP={career?.maxXp || 200}
             rank={career?.rank || "E"}
-            playerName={displayName}
-            careerClass={classLabels[career?.career_class || "explorer"]}
+            playerName={user?.displayName || user?.username || "Player"}
+            careerClass={classLabels[career?.careerClass || "explorer"]}
           />
         </header>
         <div className="p-4 md:p-6">
