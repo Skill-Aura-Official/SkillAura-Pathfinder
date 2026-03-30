@@ -1,168 +1,191 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Swords, Zap, Clock, ChevronRight, Shield, Flame, Crown, Loader2 } from "lucide-react";
+import { Swords, Loader2, Zap, RefreshCw, CheckCircle2, Clock, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { handleQuestCompletion, systemToast } from "@/lib/system-toast";
+import { api } from "@/integrations/api/client";
+import { toast } from "sonner";
 
-type QuestFilter = "all" | "daily" | "weekly" | "boss" | "epic";
-
-interface UserQuest {
-  id: string;
-  quest_id: string;
-  status: "available" | "in_progress" | "completed";
-  progress: number | null;
-  quest: {
-    id: string;
-    title: string;
-    objective: string;
-    difficulty: string;
-    xp_reward: number;
-    skill_reward: string | null;
-    quest_type: string;
-  };
+interface Quest {
+  _id: string;
+  title: string;
+  objective: string;
+  questType: string;
+  difficulty: string;
+  xpReward: number;
+  skillReward: string | null;
+  status: string;
+  progress: number;
 }
 
 const difficultyColor: Record<string, string> = {
-  E: "text-rank-e bg-rank-e/10", D: "text-rank-d bg-rank-d/10", C: "text-rank-c bg-rank-c/10",
-  B: "text-rank-b bg-rank-b/10", A: "text-rank-a bg-rank-a/10", S: "text-rank-s bg-rank-s/10",
+  E: "text-rank-e", D: "text-rank-d", C: "text-rank-c",
+  B: "text-rank-b", A: "text-rank-a", S: "text-rank-s",
 };
 
-const typeIcons: Record<string, typeof Swords> = {
-  daily: Flame, weekly: Clock, boss: Shield, epic: Crown,
+const typeIcon: Record<string, any> = {
+  daily: Clock, weekly: Swords, boss: Zap, epic: Zap,
 };
 
 export default function QuestLog() {
   const { user } = useAuth();
-  const [filter, setFilter] = useState<QuestFilter>("all");
-  const [userQuests, setUserQuests] = useState<UserQuest[]>([]);
+  const [quests, setQuests] = useState<Quest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [activeTab, setActiveTab] = useState<"available" | "in_progress" | "completed">("available");
 
   const fetchQuests = async () => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from("user_quests")
-      .select("id, quest_id, status, progress, quest:quests(id, title, objective, difficulty, xp_reward, skill_reward, quest_type)")
-      .eq("user_id", user.id);
-
-    if (!error && data) {
-      setUserQuests(data as unknown as UserQuest[]);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchQuests(); }, [user]);
-
-  const acceptQuest = async (userQuestId: string) => {
-    const { error } = await supabase.from("user_quests").update({ status: "in_progress" as any, started_at: new Date().toISOString() }).eq("id", userQuestId);
-    if (!error) {
-      systemToast("quest", "Quest accepted! Begin your mission.");
-      fetchQuests();
-    }
-  };
-
-  const completeQuest = async (uq: UserQuest) => {
-    if (!user) return;
     try {
-      await handleQuestCompletion(supabase, user.id, uq.id, uq.quest.id, uq.quest.xp_reward, uq.quest.skill_reward);
-      fetchQuests();
+      const data = await api.get(`/quests?status=${activeTab}`);
+      if (data.quests) setQuests(data.quests);
     } catch {
-      systemToast("quest", "Failed to complete quest. Try again.");
-    }
-  };
-
-  const filtered = filter === "all" ? userQuests : userQuests.filter(q => q.quest.quest_type === filter);
-
-  if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  }
-
-  const generateQuests = async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("generate-quests");
-      if (error) throw error;
-      if (data?.inserted > 0) {
-        systemToast("quest", `${data.inserted} new AI-generated quests assigned!`);
-        await fetchQuests();
-      } else {
-        systemToast("quest", "No new quests could be generated right now.");
-      }
-    } catch (e: any) {
-      const msg = e?.message?.includes("429") ? "Rate limited. Try again later." :
-                  e?.message?.includes("402") ? "AI credits depleted." : "Failed to generate quests.";
-      systemToast("quest", msg);
+      toast.error("Failed to load quests");
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Quest Log</h1>
-          <p className="text-sm text-muted-foreground">Accept quests to earn XP and level up your abilities.</p>
-        </div>
-        <Button size="sm" onClick={generateQuests} disabled={loading} className="gradient-primary text-foreground border-0">
-          <Zap className="h-3.5 w-3.5 mr-1" /> Generate AI Quests
-        </Button>
-      </motion.div>
+  useEffect(() => {
+    if (!user) return;
+    setLoading(true);
+    fetchQuests();
+  }, [user, activeTab]);
 
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {(["all", "daily", "weekly", "boss", "epic"] as QuestFilter[]).map(f => (
-          <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === f ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground hover:text-foreground"}`}>
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+  const handleGenerateQuests = async () => {
+    setGenerating(true);
+    try {
+      const data = await api.post("/ai/generate-quests", {});
+      if (data.error) { toast.error(data.error); return; }
+      toast.success(`${data.inserted || 0} new quests generated!`);
+      fetchQuests();
+    } catch {
+      toast.error("Quest generation failed");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleStartQuest = async (questId: string) => {
+    try {
+      const data = await api.put(`/quests/${questId}/start`, {});
+      if (data.error) { toast.error(data.error); return; }
+      toast.success("Quest started!");
+      fetchQuests();
+    } catch {
+      toast.error("Failed to start quest");
+    }
+  };
+
+  const handleCompleteQuest = async (questId: string) => {
+    try {
+      const data = await api.put(`/quests/${questId}/complete`, {});
+      if (data.error) { toast.error(data.error); return; }
+      toast.success(`Quest complete! +${data.xpGained || 0} XP`);
+      fetchQuests();
+    } catch {
+      toast.error("Failed to complete quest");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Quest Log</h1>
+          <p className="text-sm text-muted-foreground mt-1">Your active missions and objectives</p>
+        </div>
+        <Button onClick={handleGenerateQuests} disabled={generating} className="gradient-primary text-foreground border-0">
+          {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <><RefreshCw className="h-4 w-4 mr-2" />Generate Quests</>}
+        </Button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2">
+        {(["available", "in_progress", "completed"] as const).map((tab) => (
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize ${
+              activeTab === tab ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+            }`}>
+            {tab.replace("_", " ")}
           </button>
         ))}
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="surface-card-inset p-12 text-center">
-          <Swords className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm text-muted-foreground mb-4">No quests assigned yet.</p>
-          <Button size="sm" onClick={generateQuests} disabled={loading} className="gradient-primary text-foreground border-0">
-            <Zap className="h-3.5 w-3.5 mr-1" /> Generate Your First Quests
-          </Button>
+      {/* Quest List */}
+      {loading ? (
+        <div className="flex items-center justify-center h-48">
+          <Loader2 className="h-8 w-8 text-primary animate-spin" />
         </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((uq, i) => {
-            const q = uq.quest;
-            const TypeIcon = typeIcons[q.quest_type] || Swords;
+      ) : quests.length > 0 ? (
+        <div className="space-y-3">
+          {quests.map((quest, i) => {
+            const Icon = typeIcon[quest.questType] || Swords;
             return (
-              <motion.div key={uq.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="surface-interactive p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <TypeIcon className="h-4 w-4 text-primary" strokeWidth={1.5} />
-                    <span className="text-label">{q.quest_type} Quest</span>
+              <motion.div key={quest._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                className="surface-card-inset p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3 flex-1">
+                    <Icon className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" strokeWidth={1.5} />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-bold text-foreground">{quest.title}</span>
+                        <span className={`text-xs font-mono font-black ${difficultyColor[quest.difficulty]}`}>
+                          [{quest.difficulty}]
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground capitalize">
+                          {quest.questType}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{quest.objective}</p>
+                      {quest.skillReward && (
+                        <p className="text-xs text-accent mt-1">🎯 Skill: {quest.skillReward}</p>
+                      )}
+                      {quest.status === "in_progress" && (
+                        <div className="mt-2">
+                          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                            <span>Progress</span><span>{quest.progress}%</span>
+                          </div>
+                          <div className="h-1.5 bg-secondary rounded-full">
+                            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${quest.progress}%` }} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${difficultyColor[q.difficulty]}`}>{q.difficulty}</span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className="text-xs font-mono text-accent">+{quest.xpReward} XP</span>
+                    {quest.status === "available" && (
+                      <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleStartQuest(quest._id)}>
+                        Start
+                      </Button>
+                    )}
+                    {quest.status === "in_progress" && (
+                      <Button size="sm" className="text-xs h-7 gradient-primary text-foreground border-0" onClick={() => handleCompleteQuest(quest._id)}>
+                        <CheckCircle2 className="h-3 w-3 mr-1" /> Complete
+                      </Button>
+                    )}
+                    {quest.status === "completed" && (
+                      <span className="text-xs text-green-400 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Done
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <h4 className="text-sm font-semibold text-foreground mb-1">{q.title}</h4>
-                <p className="text-xs text-muted-foreground mb-3">{q.objective}</p>
-                <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
-                  <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-xp" /><span className="font-mono">+{q.xp_reward} XP</span></span>
-                  {q.skill_reward && <span className="font-mono">{q.skill_reward}</span>}
-                </div>
-                {uq.status === "in_progress" ? (
-                  <Button size="sm" onClick={() => completeQuest(uq)} className="w-full bg-accent text-accent-foreground border-0 h-8 text-xs">
-                    Mark Complete ✓
-                  </Button>
-                ) : uq.status === "completed" ? (
-                  <div className="text-xs font-mono text-rank-c text-center">✓ Completed</div>
-                ) : (
-                  <Button size="sm" onClick={() => acceptQuest(uq.id)} className="w-full gradient-primary text-foreground border-0 h-8 text-xs">
-                    Accept Quest <ChevronRight className="ml-1 h-3 w-3" />
-                  </Button>
-                )}
               </motion.div>
             );
           })}
         </div>
+      ) : (
+        <div className="text-center py-12 surface-card-inset">
+          <Lock className="h-8 w-8 text-muted-foreground mx-auto mb-3" strokeWidth={1.5} />
+          <p className="text-sm text-muted-foreground">No {activeTab.replace("_", " ")} quests.</p>
+          {activeTab === "available" && (
+            <Button onClick={handleGenerateQuests} className="mt-4 gradient-primary text-foreground border-0" disabled={generating}>
+              Generate Quests
+            </Button>
+          )}
+        </div>
       )}
-    </>
+    </div>
   );
 }

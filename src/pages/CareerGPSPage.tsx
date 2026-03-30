@@ -2,139 +2,148 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Circle, Lock, TrendingUp, DollarSign, Target, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/integrations/api/client";
+
+interface CareerProfile {
+  level: number;
+  rank: string;
+  careerClass: string;
+  targetCareer: string | null;
+  jobReadiness: number;
+  salaryEstimate: string | null;
+  statTechnical: number;
+  statLogic: number;
+  statCreativity: number;
+  statCommunication: number;
+  statLeadership: number;
+  statProblemSolving: number;
+  resumeData: any;
+  interviewData: any;
+}
+
+const milestones = [
+  { rank: "E", label: "Initiate", desc: "Begin your journey", xp: 0 },
+  { rank: "D", label: "Apprentice", desc: "First skills unlocked", xp: 500 },
+  { rank: "C", label: "Practitioner", desc: "Building expertise", xp: 1500 },
+  { rank: "B", label: "Specialist", desc: "Advanced capabilities", xp: 3500 },
+  { rank: "A", label: "Expert", desc: "Industry recognition", xp: 7000 },
+  { rank: "S", label: "Legend", desc: "Peak performance", xp: 15000 },
+];
+
+const rankOrder = ["E", "D", "C", "B", "A", "S"];
 
 export default function CareerGPSPage() {
   const { user } = useAuth();
-  const [career, setCareer] = useState<any>(null);
-  const [skills, setSkills] = useState<{ name: string; level: number }[]>([]);
+  const [career, setCareer] = useState<CareerProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([
-      supabase.from("career_profiles").select("*").eq("user_id", user.id).single(),
-      supabase.from("user_skills").select("level, skill:skills(name)").eq("user_id", user.id),
-    ]).then(([careerRes, skillsRes]) => {
-      if (careerRes.data) setCareer(careerRes.data);
-      if (skillsRes.data) {
-        setSkills((skillsRes.data as any[]).map(s => ({ name: (s.skill as any)?.name || "Unknown", level: s.level })));
-      }
-      setLoading(false);
-    });
+    api.get("/profile/career").then((data) => {
+      if (data.career) setCareer(data.career);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [user]);
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <Loader2 className="h-8 w-8 text-primary animate-spin" />
+    </div>
+  );
 
-  const interview = career?.interview_data as any;
-  const targetCareer = career?.target_career || "Explorer";
-  const jobReadiness = career?.job_readiness || 0;
-  const salaryEstimate = career?.salary_estimate || "N/A";
-
-  // Build dynamic roadmap from user's skills
-  const roadmapSteps = skills
-    .sort((a, b) => b.level - a.level)
-    .map(s => ({
-      label: s.name,
-      status: s.level >= 5 ? "done" as const : s.level >= 2 ? "current" as const : "locked" as const,
-      level: `Lv${s.level}`,
-    }));
-
-  // Add future milestones
-  const futureSteps = [
-    { label: "Portfolio Projects", status: "locked" as const, level: "-" },
-    { label: targetCareer, status: "locked" as const, level: "Goal" },
-  ];
-  const fullRoadmap = [...roadmapSteps, ...futureSteps];
-
-  const completedSteps = roadmapSteps.filter(s => s.status === "done").length;
-  const totalSteps = fullRoadmap.length;
-  const progress = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+  const currentRankIndex = rankOrder.indexOf(career?.rank || "E");
 
   return (
-    <>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Career GPS</h1>
-        <p className="text-sm text-muted-foreground">Your personalized career roadmap with AI predictions.</p>
-      </motion.div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-foreground">Career GPS</h1>
+        <p className="text-sm text-muted-foreground mt-1">Your personalized career roadmap</p>
+      </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Roadmap */}
-        <div className="lg:col-span-1">
-          <div className="surface-card-inset p-4">
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-label">Career Roadmap → {targetCareer}</div>
-              <div className="text-xs font-mono text-primary">{progress}%</div>
-            </div>
-            {fullRoadmap.length > 0 ? (
-              <div className="space-y-0">
-                {fullRoadmap.map((step, i) => (
-                  <div key={step.label + i} className="flex items-center gap-3 py-2.5">
-                    <div className="flex flex-col items-center">
-                      {step.status === "done" ? <CheckCircle2 className="h-5 w-5 text-rank-c" /> : step.status === "current" ? <Circle className="h-5 w-5 text-primary animate-pulse" /> : <Lock className="h-5 w-5 text-muted-foreground/40" />}
-                      {i < fullRoadmap.length - 1 && <div className={`w-px h-5 mt-1 ${step.status === "done" ? "bg-rank-c/30" : "bg-border"}`} />}
-                    </div>
-                    <div className="flex-1">
-                      <span className={`text-sm ${step.status === "done" ? "text-muted-foreground line-through" : step.status === "current" ? "text-foreground font-medium" : "text-muted-foreground/40"}`}>{step.label}</span>
-                    </div>
-                    <span className="text-xs font-mono text-muted-foreground">{step.level}</span>
+      {/* Career Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {[
+          { icon: Target, label: "Target Career", value: career?.targetCareer || "Exploring", color: "text-primary" },
+          { icon: TrendingUp, label: "Job Readiness", value: `${career?.jobReadiness || 0}%`, color: "text-green-400" },
+          { icon: DollarSign, label: "Salary Estimate", value: career?.salaryEstimate || "N/A", color: "text-accent" },
+        ].map((item, i) => (
+          <motion.div key={item.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+            className="surface-card-inset p-4">
+            <item.icon className={`h-5 w-5 ${item.color} mb-2`} strokeWidth={1.5} />
+            <div className="text-xs text-muted-foreground">{item.label}</div>
+            <div className="text-lg font-bold text-foreground mt-0.5">{item.value}</div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Rank Milestones */}
+      <div className="surface-card-inset p-6">
+        <div className="text-label mb-6">Rank Progression</div>
+        <div className="relative">
+          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
+          <div className="space-y-6">
+            {milestones.map((milestone, i) => {
+              const isCompleted = i <= currentRankIndex;
+              const isCurrent = i === currentRankIndex;
+              const isLocked = i > currentRankIndex;
+              return (
+                <motion.div key={milestone.rank} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}
+                  className="flex items-start gap-4 pl-0">
+                  <div className={`relative z-10 flex items-center justify-center w-8 h-8 rounded-full border-2 flex-shrink-0 ${
+                    isCurrent ? "border-primary bg-primary/20" :
+                    isCompleted ? "border-green-400 bg-green-400/20" :
+                    "border-border bg-background"
+                  }`}>
+                    {isCompleted && !isCurrent ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-400" />
+                    ) : isCurrent ? (
+                      <span className="text-xs font-black text-primary">{milestone.rank}</span>
+                    ) : (
+                      <Lock className="h-3 w-3 text-muted-foreground" />
+                    )}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-8">Complete onboarding and quests to build your roadmap.</p>
-            )}
-          </div>
-        </div>
-
-        {/* Career Twin */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="surface-card-inset p-6">
-            <div className="text-label mb-4">AI Career Twin — Simulation</div>
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="text-center">
-                <Target className="h-5 w-5 text-primary mx-auto mb-1" />
-                <div className="text-2xl font-bold font-mono text-primary">{jobReadiness}%</div>
-                <div className="text-label">Job Readiness</div>
-              </div>
-              <div className="text-center">
-                <DollarSign className="h-5 w-5 text-accent mx-auto mb-1" />
-                <div className="text-2xl font-bold font-mono text-accent">{salaryEstimate}</div>
-                <div className="text-label">Salary Potential</div>
-              </div>
-              <div className="text-center">
-                <TrendingUp className="h-5 w-5 text-rank-c mx-auto mb-1" />
-                <div className="text-2xl font-bold font-mono text-rank-c">Lv{career?.level || 1}</div>
-                <div className="text-label">Current Level</div>
-              </div>
-            </div>
-            {interview?.goals && (
-              <div className="bg-primary/5 border border-primary/10 rounded-lg p-3">
-                <p className="text-sm text-muted-foreground">💡 Goal: {interview.goals}. Keep completing quests to increase your job readiness score.</p>
-              </div>
-            )}
-          </div>
-
-          <div className="surface-card-inset p-6">
-            <div className="text-label mb-4">Skill Levels</div>
-            {skills.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {skills.map(s => (
-                  <div key={s.name} className="flex items-center gap-3">
-                    <span className="text-sm text-foreground font-medium w-24 truncate">{s.name}</span>
-                    <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
-                      <div className="h-full rounded-full gradient-primary" style={{ width: `${Math.min((s.level / 10) * 100, 100)}%` }} />
+                  <div className={`flex-1 pb-2 ${isLocked ? "opacity-50" : ""}`}>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-bold ${isCurrent ? "text-primary" : isCompleted ? "text-foreground" : "text-muted-foreground"}`}>
+                        Rank {milestone.rank} — {milestone.label}
+                      </span>
+                      {isCurrent && <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-mono">CURRENT</span>}
                     </div>
-                    <span className="text-xs font-mono text-muted-foreground">{s.level}</span>
+                    <p className="text-xs text-muted-foreground mt-0.5">{milestone.desc}</p>
+                    <p className="text-xs font-mono text-muted-foreground mt-0.5">{milestone.xp.toLocaleString()} XP required</p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">Unlock skills through quests to see progress here.</p>
-            )}
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </div>
-    </>
+
+      {/* Stats */}
+      {career && (
+        <div className="surface-card-inset p-4">
+          <div className="text-label mb-4">Skill Stats</div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              { label: "Technical", value: career.statTechnical },
+              { label: "Logic", value: career.statLogic },
+              { label: "Creativity", value: career.statCreativity },
+              { label: "Communication", value: career.statCommunication },
+              { label: "Leadership", value: career.statLeadership },
+              { label: "Problem Solving", value: career.statProblemSolving },
+            ].map((stat) => (
+              <div key={stat.label} className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">{stat.label}</span>
+                  <span className="text-foreground font-mono">{stat.value}/50</span>
+                </div>
+                <div className="h-1.5 bg-secondary rounded-full">
+                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(stat.value / 50) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
