@@ -28,8 +28,12 @@ export default function RecruiterPanel() {
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      supabase.from("companies").select("*").eq("recruiter_id", user.id).limit(1).single(),
-      supabase.from("leaderboard").select("*").order("current_xp", { ascending: false }).limit(50),
+      supabase.from("companies").select("*").eq("recruiter_id", user.id).limit(1).maybeSingle(),
+      supabase
+        .from("career_profiles")
+        .select("user_id, level, rank, career_class, current_xp, profile:profiles(display_name)")
+        .order("current_xp", { ascending: false })
+        .limit(50),
     ]).then(([companyRes, candidatesRes]) => {
       if (companyRes.data) {
         setCompany(companyRes.data as CompanyRow);
@@ -39,12 +43,22 @@ export default function RecruiterPanel() {
           website: companyRes.data.website || "",
           description: companyRes.data.description || "",
         });
-        // Fetch jobs for this company
         supabase.from("jobs").select("*").eq("company_id", companyRes.data.id).then(({ data }) => {
           if (data) setJobs(data as JobRow[]);
         });
       }
-      if (candidatesRes.data) setCandidates(candidatesRes.data as CandidateRow[]);
+      if (candidatesRes.data) {
+        setCandidates(
+          (candidatesRes.data as any[]).map(c => ({
+            user_id: c.user_id,
+            level: c.level,
+            rank: c.rank,
+            career_class: c.career_class,
+            current_xp: c.current_xp,
+            display_name: (c.profile as any)?.display_name || "Anonymous",
+          }))
+        );
+      }
       setLoading(false);
     });
   }, [user]);
