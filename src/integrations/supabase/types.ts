@@ -54,6 +54,7 @@ export type Database = {
           job_readiness: number | null
           level: number
           max_xp: number
+          onboarding_completed: boolean
           rank: Database["public"]["Enums"]["player_rank"]
           resume_data: Json | null
           salary_estimate: string | null
@@ -76,6 +77,7 @@ export type Database = {
           job_readiness?: number | null
           level?: number
           max_xp?: number
+          onboarding_completed?: boolean
           rank?: Database["public"]["Enums"]["player_rank"]
           resume_data?: Json | null
           salary_estimate?: string | null
@@ -98,6 +100,7 @@ export type Database = {
           job_readiness?: number | null
           level?: number
           max_xp?: number
+          onboarding_completed?: boolean
           rank?: Database["public"]["Enums"]["player_rank"]
           resume_data?: Json | null
           salary_estimate?: string | null
@@ -520,7 +523,7 @@ export type Database = {
     }
     Functions: {
       complete_quest: {
-        Args: { p_quest_id: number; p_user_id: string }
+        Args: { p_quest_id: string; p_user_id: string }
         Returns: undefined
       }
       has_role: {

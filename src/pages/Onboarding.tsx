@@ -170,6 +170,7 @@ export default function Onboarding() {
       // Update career profile
       const updateData: any = {
         career_class: selectedClass || "explorer",
+        onboarding_completed: true,
         interview_data: {
           goals: selectedGoal,
           strengths: resumeAnalysis?.strengths?.join(", ") || "",

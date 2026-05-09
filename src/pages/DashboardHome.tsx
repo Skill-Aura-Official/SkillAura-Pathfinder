@@ -56,8 +56,8 @@ export default function DashboardHome() {
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      supabase.from("career_profiles").select("*").eq("user_id", user.id).single(),
-      supabase.from("profiles").select("display_name").eq("user_id", user.id).single(),
+      supabase.from("career_profiles").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle(),
       supabase.from("user_quests").select("id, status, progress, quest:quests(title, objective, difficulty, xp_reward, skill_reward, quest_type)").eq("user_id", user.id).limit(5),
       supabase.from("user_skills").select("level, skill:skills(name)").eq("user_id", user.id),
     ]).then(([careerRes, profileRes, questsRes, skillsRes]) => {

@@ -38,7 +38,7 @@ export async function handleQuestCompletion(
     .from("career_profiles")
     .select("current_xp, level, rank")
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
   const oldLevel = cp?.level || 1;
   const oldRank = cp?.rank || "E";
@@ -57,7 +57,7 @@ export async function handleQuestCompletion(
     .from("career_profiles")
     .select("level, rank")
     .eq("user_id", userId)
-    .single();
+    .maybeSingle();
 
   // Show RPG toasts
   systemToast("xp", `+${xpReward} XP earned!`);
