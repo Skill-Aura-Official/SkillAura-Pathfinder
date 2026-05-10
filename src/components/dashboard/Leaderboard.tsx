@@ -4,13 +4,28 @@ import { supabase } from "@/integrations/supabase/client";
 
 const badgeColor: Record<string, string> = { S: "text-rank-s", A: "text-rank-a", B: "text-rank-b", C: "text-rank-c", D: "text-rank-d", E: "text-rank-e" };
 
+type Row = { user_id: string; display_name: string | null; level: number; current_xp: number; rank: string };
+
 export default function Leaderboard() {
   const { user } = useAuth();
-  const [players, setPlayers] = useState<{ user_id: string | null; display_name: string | null; level: number | null; current_xp: number | null; rank: string | null }[]>([]);
+  const [players, setPlayers] = useState<Row[]>([]);
 
   useEffect(() => {
-    supabase.from("leaderboard").select("*").order("current_xp", { ascending: false }).limit(5)
-      .then(({ data }) => { if (data) setPlayers(data as any[]); });
+    (async () => {
+      const { data: cps } = await supabase
+        .from("career_profiles")
+        .select("user_id, level, current_xp, rank")
+        .order("current_xp", { ascending: false })
+        .limit(5);
+      if (!cps?.length) return;
+      const ids = cps.map((c: any) => c.user_id);
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("user_id, display_name")
+        .in("user_id", ids);
+      const map = new Map((profs || []).map((p: any) => [p.user_id, p.display_name]));
+      setPlayers(cps.map((c: any) => ({ ...c, display_name: map.get(c.user_id) ?? "Unknown" })));
+    })();
   }, []);
 
   return (
