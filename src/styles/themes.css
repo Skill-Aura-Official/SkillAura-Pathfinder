@@ -1,53 +1,54 @@
-/* Theme variables — applied via data-theme attribute on body */
+/* Theme variants — all inherit Glass Aurora baseline; only accent hues shift */
 
-/* Ocean Theme (default) */
 [data-theme="ocean"] {
-  --background: 222 84% 5%;
-  --primary: 195 90% 48%;
-  --primary-foreground: 222 84% 5%;
-  --accent: 180 70% 45%;
-  --ring: 195 90% 48%;
-  --sidebar-primary: 195 90% 48%;
+  --primary: 258 90% 76%;
+  --primary-glow: 258 100% 82%;
+  --accent: 142 71% 60%;
+  --accent-glow: 142 80% 70%;
+  --ring: 258 90% 76%;
+  --gradient-primary: linear-gradient(135deg, hsl(258 90% 76%), hsl(217 95% 68%));
+  --gradient-accent: linear-gradient(135deg, hsl(142 71% 60%), hsl(180 70% 60%));
+  --gradient-aurora: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(258 90% 76% / 0.18), transparent),
+                     radial-gradient(ellipse 60% 40% at 90% 10%, hsl(142 71% 60% / 0.12), transparent),
+                     radial-gradient(ellipse 60% 40% at 10% 80%, hsl(217 95% 68% / 0.10), transparent);
 }
 
-/* Windy Theme */
 [data-theme="windy"] {
-  --background: 160 30% 5%;
-  --primary: 160 84% 40%;
-  --primary-foreground: 160 30% 5%;
-  --accent: 140 60% 50%;
-  --ring: 160 84% 40%;
-  --sidebar-primary: 160 84% 40%;
-  --card: 160 20% 10%;
-  --secondary: 160 20% 15%;
-  --border: 160 20% 15%;
-  --input: 160 20% 15%;
+  --primary: 160 84% 55%;
+  --primary-glow: 160 95% 68%;
+  --accent: 180 80% 55%;
+  --accent-glow: 180 90% 65%;
+  --ring: 160 84% 55%;
+  --gradient-primary: linear-gradient(135deg, hsl(160 84% 55%), hsl(180 80% 55%));
+  --gradient-accent: linear-gradient(135deg, hsl(180 80% 55%), hsl(200 85% 60%));
+  --gradient-aurora: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(160 84% 55% / 0.18), transparent),
+                     radial-gradient(ellipse 60% 40% at 90% 10%, hsl(180 80% 55% / 0.14), transparent);
 }
 
-/* Wrench Theme */
 [data-theme="wrench"] {
-  --background: 220 10% 6%;
-  --primary: 220 10% 55%;
-  --primary-foreground: 220 10% 98%;
-  --accent: 35 90% 55%;
-  --ring: 220 10% 55%;
-  --sidebar-primary: 220 10% 55%;
-  --card: 220 8% 11%;
-  --secondary: 220 8% 16%;
-  --border: 220 8% 16%;
-  --input: 220 8% 16%;
+  --background: 220 12% 7%;
+  --card: 220 10% 12%;
+  --primary: 38 95% 60%;
+  --primary-glow: 38 100% 70%;
+  --accent: 25 90% 60%;
+  --accent-glow: 25 100% 70%;
+  --ring: 38 95% 60%;
+  --gradient-primary: linear-gradient(135deg, hsl(38 95% 60%), hsl(25 90% 60%));
+  --gradient-accent: linear-gradient(135deg, hsl(25 90% 60%), hsl(15 85% 55%));
+  --gradient-aurora: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(38 95% 60% / 0.15), transparent),
+                     radial-gradient(ellipse 60% 40% at 80% 20%, hsl(25 90% 60% / 0.12), transparent);
 }
 
-/* Blood Moon Theme */
 [data-theme="bloodmoon"] {
-  --background: 0 40% 4%;
-  --primary: 0 75% 50%;
-  --primary-foreground: 0 0% 98%;
-  --accent: 340 80% 55%;
-  --ring: 0 75% 50%;
-  --sidebar-primary: 0 75% 50%;
+  --background: 0 35% 5%;
   --card: 0 25% 9%;
-  --secondary: 0 20% 14%;
-  --border: 0 20% 14%;
-  --input: 0 20% 14%;
+  --primary: 0 85% 65%;
+  --primary-glow: 0 95% 75%;
+  --accent: 340 90% 65%;
+  --accent-glow: 340 100% 75%;
+  --ring: 0 85% 65%;
+  --gradient-primary: linear-gradient(135deg, hsl(0 85% 65%), hsl(340 90% 65%));
+  --gradient-accent: linear-gradient(135deg, hsl(340 90% 65%), hsl(310 85% 60%));
+  --gradient-aurora: radial-gradient(ellipse 80% 50% at 50% -20%, hsl(0 85% 65% / 0.18), transparent),
+                     radial-gradient(ellipse 60% 40% at 90% 10%, hsl(340 90% 65% / 0.14), transparent);
 }

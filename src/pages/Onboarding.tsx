@@ -113,20 +113,22 @@ export default function Onboarding() {
     setPhase("scanning");
 
     try {
-      // Upload to storage
+      // Upload original file to storage (for record-keeping)
       const filePath = `${user.id}/${Date.now()}_${resumeFile.name}`;
       await supabase.storage.from("resumes").upload(filePath, resumeFile);
 
-      // Extract text (for now send filename as placeholder — real PDF parsing would need a library)
-      // Read file as text if possible
+      // Real client-side text extraction (PDF/TXT/etc.)
+      const { extractResumeText } = await import("@/lib/resume-extractor");
       let resumeText = "";
       try {
-        resumeText = await resumeFile.text();
-      } catch {
-        resumeText = `Resume file: ${resumeFile.name}`;
+        resumeText = await extractResumeText(resumeFile);
+      } catch (err: any) {
+        toast.error(err?.message || "Could not read this file. Try a text-based PDF.");
+        setPhase("resume");
+        setSaving(false);
+        return;
       }
 
-      // Call AI analysis
       const { data, error } = await supabase.functions.invoke("analyze-resume", {
         body: { resumeText },
       });

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Target, TrendingUp, DollarSign, Award, Briefcase, GraduationCap, Flame, Calendar, ArrowUpRight, Loader2 } from "lucide-react";
+import { Target, TrendingUp, DollarSign, Award, Briefcase, GraduationCap, Flame, Calendar, ArrowUpRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import StatRadar from "@/components/dashboard/StatRadar";
 import Achievements from "@/components/dashboard/Achievements";
 import Leaderboard from "@/components/dashboard/Leaderboard";
+import { DashboardHomeSkeleton } from "@/components/dashboard/skeletons";
 
 interface CareerProfile {
   career_class: string;
@@ -71,9 +72,7 @@ export default function DashboardHome() {
     });
   }, [user]);
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-64"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  }
+  if (loading) return <DashboardHomeSkeleton />;
 
   const careerClass = career?.career_class || "explorer";
   const ClassIcon = classIcons[careerClass] || Target;
@@ -89,22 +88,29 @@ export default function DashboardHome() {
   return (
     <>
       {/* Welcome Banner */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 surface-card-inset p-5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-        <div className="relative flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <ClassIcon className="h-5 w-5 text-primary" strokeWidth={1.5} />
+      <motion.div
+        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="mb-6 surface-card-inset p-6 md:p-7 relative overflow-hidden"
+      >
+        <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-primary/15 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 -left-10 w-72 h-72 rounded-full bg-accent/10 blur-3xl pointer-events-none" />
+        <div className="relative flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg gradient-primary grid place-items-center glow-primary">
+                <ClassIcon className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={2.25} />
+              </div>
               <span className="text-label text-primary">{classLabels[careerClass] || "Explorer"}</span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Welcome back, <span className="text-primary">{displayName}</span>
+            <h1 className="text-display text-2xl md:text-3xl text-foreground">
+              Welcome back, <span className="text-gradient-primary">{displayName}</span>
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {interviewData?.goals ? `Goal: ${interviewData.goals}` : "Your career command center awaits."}
+            <p className="text-sm md:text-base text-muted-foreground mt-2 max-w-2xl">
+              {interviewData?.goals ? `Goal: ${interviewData.goals}` : "Your career command center awaits — pick a quest, level up, and chase your next rank."}
             </p>
           </div>
-          <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground glass px-3 py-1.5 rounded-full">
             <Calendar className="h-3.5 w-3.5" />
             {new Date().toLocaleDateString("en-IN", { weekday: "long", month: "short", day: "numeric" })}
           </div>

@@ -35,8 +35,8 @@ export default function XPBar({ level, currentXP, maxXP, rank, playerName, caree
   return (
     <div className={`flex items-center gap-4 ${className ?? ""}`}>
       {/* Level badge */}
-      <div className="flex items-center justify-center w-10 h-10 rounded-lg gradient-primary glow-blue shrink-0">
-        <span className="text-sm font-bold font-mono text-foreground">{level}</span>
+      <div className="flex items-center justify-center w-10 h-10 rounded-xl gradient-primary glow-primary shrink-0">
+        <span className="text-sm font-bold font-mono text-primary-foreground">{level}</span>
       </div>
 
       {/* Info + XP bar */}
