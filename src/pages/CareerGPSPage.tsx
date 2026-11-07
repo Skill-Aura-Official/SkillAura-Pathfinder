@@ -17,8 +17,8 @@ interface CareerProfile {
   statCommunication: number;
   statLeadership: number;
   statProblemSolving: number;
-  resumeData: any;
-  interviewData: any;
+  resumeData: unknown;
+  interviewData: unknown;
 }
 
 const milestones = [

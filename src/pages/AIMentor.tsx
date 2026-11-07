@@ -66,9 +66,10 @@ export default function AIMentor() {
 
       // Save assistant response to DB
       await supabase.from("chat_messages").insert({ user_id: user.id, role: "assistant", content: assistantContent });
-    } catch (e: any) {
-      const errorMsg = e?.message?.includes("429") ? "Rate limited. Please wait a moment." :
-                       e?.message?.includes("402") ? "AI credits depleted. Please add credits in Settings > Workspace > Usage." :
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "";
+      const errorMsg = message.includes("429") ? "Rate limited. Please wait a moment." :
+                       message.includes("402") ? "AI credits depleted. Please add credits in Settings > Workspace > Usage." :
                        "System error. Please retry.";
       setMessages(prev => [...prev, { role: "assistant", content: errorMsg }]);
       toast.error(errorMsg);

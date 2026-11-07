@@ -22,8 +22,8 @@ interface CareerProfile {
   statCommunication: number;
   statLeadership: number;
   statProblemSolving: number;
-  resumeData: any;
-  interviewData: any;
+  resumeData: unknown;
+  interviewData: unknown;
 }
 
 interface Quest {
@@ -83,7 +83,7 @@ export default function DashboardHome() {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="text-2xl font-bold text-foreground">
-          Welcome back, <span className="text-primary">{user?.displayName || user?.username}</span>
+          Welcome back, <span className="text-primary">{user?.user_metadata?.display_name || user?.user_metadata?.username}</span>
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           {classLabels[career?.careerClass || "explorer"]} • Rank {career?.rank || "E"} • Level {career?.level || 1}
@@ -111,7 +111,7 @@ export default function DashboardHome() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Stat Radar */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="lg:col-span-1">
-          <StatRadar stats={stats} />
+          <StatRadar stats={Object.fromEntries(stats.map(({ label, value }) => [label, value]))} />
         </motion.div>
 
         {/* Active Quests */}
