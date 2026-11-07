@@ -1,3 +1,4 @@
+import type { CareerStats } from "@/lib/career-types";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
@@ -7,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function AnalyticsPage() {
   const { user } = useAuth();
-  const [career, setCareer] = useState<any>(null);
+  const [career, setCareer] = useState<CareerStats | null>(null);
   const [questStats, setQuestStats] = useState({ total: 0, completed: 0, inProgress: 0 });
   const [skillCount, setSkillCount] = useState(0);
   const [loading, setLoading] = useState(true);

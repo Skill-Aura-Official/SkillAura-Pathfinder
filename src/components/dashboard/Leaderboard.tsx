@@ -29,7 +29,7 @@ export default function Leaderboard() {
       {players.length > 0 ? (
         <div className="space-y-2">
           {players.map((p, i) => {
-            const isUser = p._id === user?._id;
+            const isUser = p._id === user?.id;
             return (
               <div key={p._id || i} className={`flex items-center justify-between py-2 px-3 rounded-lg text-sm ${isUser ? "bg-primary/10 border border-primary/20" : ""}`}>
                 <div className="flex items-center gap-3">

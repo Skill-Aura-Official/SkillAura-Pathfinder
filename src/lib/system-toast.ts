@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
 export function systemToast(type: "xp" | "level" | "rank" | "quest" | "skill" | "achievement", message: string) {
@@ -18,7 +19,7 @@ export function systemToast(type: "xp" | "level" | "rank" | "quest" | "skill" | 
 }
 
 export async function handleQuestCompletion(
-  supabase: any,
+  supabase: SupabaseClient,
   userId: string,
   userQuestId: string,
   questId: string,

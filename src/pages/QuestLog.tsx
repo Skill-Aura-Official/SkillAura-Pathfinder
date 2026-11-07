@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
 import { Swords, Loader2, Zap, RefreshCw, CheckCircle2, Clock, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,7 +24,7 @@ const difficultyColor: Record<string, string> = {
   B: "text-rank-b", A: "text-rank-a", S: "text-rank-s",
 };
 
-const typeIcon: Record<string, any> = {
+const typeIcon: Record<string, LucideIcon> = {
   daily: Clock, weekly: Swords, boss: Zap, epic: Zap,
 };
 
@@ -34,7 +35,7 @@ export default function QuestLog() {
   const [generating, setGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<"available" | "in_progress" | "completed">("available");
 
-  const fetchQuests = async () => {
+  const fetchQuests = useCallback(async () => {
     try {
       const data = await api.get(`/quests?status=${activeTab}`);
       if (data.quests) setQuests(data.quests);
@@ -43,13 +44,13 @@ export default function QuestLog() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
 
   useEffect(() => {
     if (!user) return;
     setLoading(true);
     fetchQuests();
-  }, [user, activeTab]);
+  }, [user, fetchQuests]);
 
   const handleGenerateQuests = async () => {
     setGenerating(true);

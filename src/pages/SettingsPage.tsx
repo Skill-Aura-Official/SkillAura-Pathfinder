@@ -32,7 +32,7 @@ export default function SettingsPage() {
       if (profileRes.data) {
         setDisplayName(profileRes.data.display_name || "");
         setBio(profileRes.data.bio || "");
-        setTheme((profileRes.data as any).theme || "ocean");
+        setTheme(profileRes.data.theme || "ocean");
       }
       if (subRes.data) setPlan(subRes.data.plan);
       setLoading(false);
@@ -42,7 +42,7 @@ export default function SettingsPage() {
   const saveProfile = async () => {
     if (!user) return;
     setSaving(true);
-    await supabase.from("profiles").update({ display_name: displayName, bio, theme } as any).eq("user_id", user.id);
+    await supabase.from("profiles").update({ display_name: displayName, bio, theme }).eq("user_id", user.id);
     document.body.setAttribute("data-theme", theme);
     setSaving(false);
     toast.success("Profile updated!");

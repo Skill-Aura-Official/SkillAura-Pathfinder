@@ -1,3 +1,4 @@
+import { readUserSkills } from "@/lib/career-types";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
@@ -18,11 +19,7 @@ export default function SkillTreePage() {
       supabase.from("career_profiles").select("stat_technical, stat_logic, stat_creativity, stat_communication, stat_leadership, stat_problem_solving").eq("user_id", user.id).single(),
     ]).then(([skillsRes, statsRes]) => {
       if (skillsRes.data) {
-        setSkills((skillsRes.data as any[]).map(s => ({
-          name: (s.skill as any)?.name || "Unknown",
-          level: s.level,
-          category: (s.skill as any)?.category || "General",
-        })));
+        setSkills(readUserSkills(skillsRes.data));
       }
       if (statsRes.data) {
         const d = statsRes.data;

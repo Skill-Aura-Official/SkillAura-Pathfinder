@@ -3,14 +3,12 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/integrations/api/client";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, UserPlus } from "lucide-react";
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { setUser, setToken } = useAuth();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,11 +19,16 @@ export default function Signup() {
     if (password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
     setLoading(true);
     try {
-      const data = await api.post("/auth/signup", { username, email, password });
-      if (data.error) { toast.error(data.error); return; }
-      setToken(data.token);
-      setUser(data.user);
-      toast.success("Account created! Let's set up your profile.");
+      const { data, error } = await supabase.auth.signUp({
+        email, password, options: { data: { username, display_name: username } },
+      });
+      if (error) { toast.error(error.message); return; }
+      if (!data.session) {
+        toast.success("Check your email to confirm your account before signing in.");
+        navigate("/login");
+        return;
+      }
+      toast.success("Account created. Let's set up your profile.");
       navigate("/onboarding");
     } catch {
       toast.error("Signup failed. Try again.");
@@ -46,8 +49,9 @@ export default function Signup() {
 
           <div className="space-y-4">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Username</label>
+              <label htmlFor="username" className="text-xs text-muted-foreground mb-1 block">Username</label>
               <Input
+                id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="coolplayer123"
@@ -55,9 +59,10 @@ export default function Signup() {
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Email</label>
+              <label htmlFor="email" className="text-xs text-muted-foreground mb-1 block">Email</label>
               <Input
                 type="email"
+                id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
@@ -65,9 +70,10 @@ export default function Signup() {
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Password</label>
+              <label htmlFor="password" className="text-xs text-muted-foreground mb-1 block">Password</label>
               <Input
                 type="password"
+                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="min 6 characters"

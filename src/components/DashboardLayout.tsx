@@ -73,7 +73,7 @@ export default function DashboardLayout() {
 
       <div className="mb-6 px-2">
         <div className="surface-card-inset p-3">
-          <div className="text-sm font-bold text-foreground">{user?.displayName || user?.username}</div>
+          <div className="text-sm font-bold text-foreground">{user?.user_metadata?.display_name || user?.user_metadata?.username}</div>
           <div className="text-[10px] font-mono text-primary mt-0.5">
             {classLabels[career?.careerClass || "explorer"]} • Rank {career?.rank || "E"}
           </div>
@@ -142,7 +142,7 @@ export default function DashboardLayout() {
             currentXP={career?.currentXp || 0}
             maxXP={career?.maxXp || 200}
             rank={career?.rank || "E"}
-            playerName={user?.displayName || user?.username || "Player"}
+            playerName={user?.user_metadata?.display_name || user?.user_metadata?.username || "Player"}
             careerClass={classLabels[career?.careerClass || "explorer"]}
           />
         </header>

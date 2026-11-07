@@ -3,14 +3,12 @@ import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/contexts/AuthContext";
-import { api } from "@/integrations/api/client";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2, Swords } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { setUser, setToken } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -19,13 +17,11 @@ export default function Login() {
     if (!email || !password) { toast.error("Fill in all fields"); return; }
     setLoading(true);
     try {
-      const data = await api.post("/auth/login", { email, password });
-      if (data.error) { toast.error(data.error); return; }
-      setToken(data.token);
-      setUser(data.user);
-      toast.success("Access granted!");
-      if (!data.user.onboardingComplete) navigate("/onboarding");
-      else navigate("/dashboard");
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) { toast.error(error.message); return; }
+      if (!data.session) { toast.error("No session was established. Please try again."); return; }
+      toast.success("Signed in.");
+      navigate("/dashboard");
     } catch {
       toast.error("Login failed. Try again.");
     } finally {
@@ -45,9 +41,10 @@ export default function Login() {
 
           <div className="space-y-4">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Email</label>
+              <label htmlFor="email" className="text-xs text-muted-foreground mb-1 block">Email</label>
               <Input
                 type="email"
+                id="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
@@ -56,9 +53,10 @@ export default function Login() {
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Password</label>
+              <label htmlFor="password" className="text-xs text-muted-foreground mb-1 block">Password</label>
               <Input
                 type="password"
+                id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"

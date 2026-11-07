@@ -1,3 +1,4 @@
+import { readUserSkills } from "@/lib/career-types";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Circle, Lock } from "lucide-react";
@@ -12,10 +13,10 @@ export default function CareerGPS() {
     if (!user) return;
     supabase.from("user_skills").select("level, skill:skills(name)").eq("user_id", user.id).then(({ data }) => {
       if (data && data.length > 0) {
-        const mapped = (data as any[])
-          .sort((a: any, b: any) => b.level - a.level)
-          .map((s: any) => ({
-            label: s.skill?.name || "Unknown",
+        const mapped = readUserSkills(data)
+          .sort((a, b) => b.level - a.level)
+          .map((s) => ({
+            label: s.name,
             status: s.level >= 5 ? "done" as const : s.level >= 2 ? "current" as const : "locked" as const,
           }));
         setSteps(mapped.slice(0, 6));

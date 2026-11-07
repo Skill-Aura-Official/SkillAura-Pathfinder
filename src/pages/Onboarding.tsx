@@ -1,3 +1,4 @@
+import type { CareerStats, ResumeAnalysis } from "@/lib/career-types";
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -43,7 +44,7 @@ export default function Onboarding() {
   const [password, setPassword] = useState("");
   const [selectedTheme, setSelectedTheme] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [resumeAnalysis, setResumeAnalysis] = useState<any>(null);
+  const [resumeAnalysis, setResumeAnalysis] = useState<ResumeAnalysis | null>(null);
   const [selectedGoal, setSelectedGoal] = useState("");
   const [selectedClass, setSelectedClass] = useState("");
   const [saving, setSaving] = useState(false);
@@ -141,7 +142,7 @@ export default function Onboarding() {
       setPhase("profile_gen");
       await new Promise(r => setTimeout(r, 2000));
       setPhase("goal");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       toast.error("Resume scan failed. Proceeding manually...");
       setPhase("goal");
@@ -168,7 +169,7 @@ export default function Onboarding() {
       }).eq("user_id", user.id);
 
       // Update career profile
-      const updateData: any = {
+      const updateData: CareerStats & { career_class: string; interview_data: { goals: string; strengths: string; experience: string; interests: string }; target_career: string; salary_estimate?: string | null } = {
         career_class: selectedClass || "explorer",
         interview_data: {
           goals: selectedGoal,

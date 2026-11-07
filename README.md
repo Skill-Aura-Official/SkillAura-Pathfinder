@@ -13,11 +13,13 @@ npm ci
 npm run dev -- --host 127.0.0.1
 ```
 
-The Vite configuration uses port 8080, not 5173. Read the printed URL if the port is occupied. Set `VITE_API_URL` to the authorized backend API base, including its `/api` prefix; the source fallback is `http://localhost:5000/api`. This repository does not supply that server. Browser-prefixed variables are public build inputs, never a place for API secrets or service credentials.
+The Vite configuration uses port 8080, not 5173. Read the printed URL if the port is occupied. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to the authorized Supabase project URL and public browser key. Missing or invalid configuration displays a setup-required screen before the application initializes its services. HTTPS project URLs and local HTTP development URLs are accepted. Never use a service-role key. Set `VITE_API_URL` to the authorized backend API base, including its `/api` prefix; the source fallback is `http://localhost:5000/api`. This repository does not supply that server. Browser-prefixed variables are public build inputs, never a place for API secrets or service credentials.
 
 ## Integration boundary
 
-`src/integrations/api/client.ts` calls the separate API using the stored authentication token. Account provisioning, MongoDB, Gemini configuration, migrations, token validation and backend startup cannot be configured from absent backend source. Obtain a compatible backend and its contract from the maintainer before testing login, resume analysis, chat or persistence. Prior full-stack installation instructions and provider deployment claims do not apply to this checkout. No live provider or hosted deployment is verified here.
+Authentication, database queries and edge-function calls use Supabase. Login and signup use the same Supabase session consumed by the existing authentication context. Signup without a returned session asks the user to confirm their email before login. The separate REST adapter in `src/integrations/api/client.ts` forwards the current Supabase session access token; its backend must independently validate that token. Some screens still depend on this separate API.
+
+This repository does not supply the backend server, database schema/policies or deployed edge functions. Obtain compatible authorized services from the maintainer before testing resume analysis, chat or persistence. Configuration checks establish URL shape and key presence, not project access or correctness. No live provider or hosted deployment is verified here.
 
 ## Checks
 
@@ -25,6 +27,7 @@ The Vite configuration uses port 8080, not 5173. Read the printed URL if the por
 npm run build
 npm run lint
 npm test
+npx tsc --noEmit -p tsconfig.app.json
 npm run preview -- --host 127.0.0.1
 ```
 
@@ -36,6 +39,8 @@ SkillAura project and existing Git contributor attribution are preserved, along 
 
 ## Verified limits (2026-11-07)
 
-On Node 24.3.0, locked installation with lifecycle scripts disabled passed. `npm run build` failed because source still imports the missing `src/integrations/supabase/client` module. `npm run lint` reported 25 errors and 9 warnings. The checkout therefore is not a verified runnable frontend; restore/reconcile the missing integration through a reviewed source change before expecting development or production builds to work.
+On Node 24.3.0, the production build, application TypeScript check and lint passed. Lint retains eight existing Fast Refresh warnings; no lint rules were disabled. Ten tests across five files passed, covering configuration validation, skill relationship normalization, mocked login/signup navigation and current-session REST authorization, plus the existing example test.
 
-The single example Vitest test passed; it asserts a constant and does not exercise application behavior.
+With external configuration explicitly blank and all non-local browser requests blocked, the production build showed the setup-required screen after initial load and reload at 390, 768 and 1440 pixels, with no horizontal overflow or page errors. No Supabase or backend API request occurred. Google Fonts requests were blocked during this check.
+
+These checks do not verify real account provisioning, email delivery, authorization policies, database persistence, AI output, deployed functions or the separate API contract. Those remain integration acceptance work against maintainer-approved services.
